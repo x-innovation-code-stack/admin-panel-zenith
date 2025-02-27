@@ -64,11 +64,11 @@ const Register = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-accent/20">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-accent/30 to-background">
       <div className="w-full max-w-md animate-fade-in">
-        <Card className="glass border-0 shadow-lg">
+        <Card className="glass card-gradient border-0 shadow-medium">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
+            <CardTitle className="text-2xl font-bold text-center text-gradient">
               Create an account
             </CardTitle>
             <CardDescription className="text-center">
@@ -187,7 +187,7 @@ const Register = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full mt-6" 
+                  className="w-full mt-6 btn-gradient shadow-soft" 
                   disabled={isLoading}
                 >
                   {isLoading ? (

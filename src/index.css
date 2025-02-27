@@ -5,45 +5,45 @@
 
 @layer base {
   :root {
-    /* Light modern theme with purple accent */
-    --background: 220 33% 99%;
-    --foreground: 240 10% 3.9%;
+    /* Modern vibrant theme with teal/blue gradient */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 196 80% 45%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 262 83% 94%;
-    --accent-foreground: 262 83% 28%;
+    --accent: 196 80% 93%;
+    --accent-foreground: 196 80% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 262 83% 58%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 196 80% 45%;
 
     --radius: 0.75rem;
 
-    /* Sidebar specific colors */
-    --sidebar-background: 262 83% 58%;
+    /* Sidebar specific colors - teal/blue theme */
+    --sidebar-background: 196 80% 45%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 262 83% 58%;
-    --sidebar-accent: 262 83% 68%;
+    --sidebar-primary-foreground: 196 80% 45%;
+    --sidebar-accent: 196 90% 55%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 262 83% 68%;
+    --sidebar-border: 196 90% 55%;
     --sidebar-ring: 0 0% 100%;
   }
 }
@@ -55,19 +55,48 @@
   
   body {
     @apply bg-background text-foreground antialiased;
+    background-image: linear-gradient(to bottom right, rgba(236, 252, 255, 0.5), rgba(205, 240, 255, 0.7));
+    background-attachment: fixed;
   }
   
   .glass {
-    @apply bg-white/50 backdrop-blur-md border border-white/20 rounded-xl shadow-sm;
+    @apply bg-white/60 backdrop-blur-md border border-white/30 rounded-xl shadow-sm;
   }
   
   .card-transition {
-    @apply transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-1;
+    @apply transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Add gradient button effect */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] text-white hover:from-[#0ea5e9] hover:to-[#06b6d4];
+  }
+
+  /* Add subtle card gradient */
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-accent/30;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-[#0ea5e9] bg-clip-text text-transparent;
+  }
+  
+  .border-gradient {
+    border-image: linear-gradient(to right, #06b6d4, #0ea5e9) 1;
+  }
+
+  /* Add subtle shadow effects */
+  .shadow-soft {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .shadow-medium {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
 }

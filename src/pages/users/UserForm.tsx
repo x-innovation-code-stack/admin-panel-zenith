@@ -33,8 +33,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
+// User status as a const to ensure type safety
+const USER_STATUSES = ['active', 'inactive', 'pending'] as const;
 // Define status type to ensure it's properly typed
-type UserStatus = 'active' | 'inactive' | 'pending';
+type UserStatus = typeof USER_STATUSES[number];
 
 const createUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -43,7 +45,7 @@ const createUserSchema = z.object({
   phone: z.string().optional(),
   whatsapp_phone: z.string().optional(),
   // Ensure status is properly typed
-  status: z.enum(['active', 'inactive', 'pending']),
+  status: z.enum(USER_STATUSES),
   role: z.string().min(1, { message: 'Please select a role' }),
 });
 
@@ -74,7 +76,7 @@ const UserForm = () => {
       password: '',
       phone: '',
       whatsapp_phone: '',
-      status: 'active' as UserStatus, // Explicitly type this as UserStatus
+      status: 'active' as UserStatus,
       role: '',
     },
   });
@@ -137,36 +139,47 @@ const UserForm = () => {
   // Set form values when user data is loaded
   useEffect(() => {
     if (isEditMode && userData) {
+      // Validate the status from the API
+      const status = USER_STATUSES.includes(userData.status as UserStatus) 
+        ? (userData.status as UserStatus) 
+        : 'active' as UserStatus;
+        
       form.reset({
         name: userData.name,
         email: userData.email,
         password: '',
         phone: userData.phone || '',
         whatsapp_phone: userData.whatsapp_phone || '',
-        status: userData.status as UserStatus, // Cast to ensure correct type
+        status,
         role: userData.role,
       });
     }
   }, [userData, form, isEditMode]);
 
-  const onSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
+  const onSubmit = (formData: CreateUserFormData | UpdateUserFormData) => {
     if (isEditMode && id) {
+      // Validate the status before using it
+      const status = USER_STATUSES.includes(formData.status as UserStatus) 
+        ? formData.status as UserStatus 
+        : 'active' as UserStatus;
+        
+      // Create a clean object with proper typing
+      const typedData = {
+        ...formData,
+        status
+      };
+      
       // Filter out empty fields for the update
-      const updateData: UpdateUserData = Object.entries(data).reduce((acc, [key, value]) => {
-        if (value !== '') {
-          // For status field, we need to explicitly cast it to UserStatus
-          if (key === 'status') {
-            acc[key as keyof UpdateUserData] = value as UserStatus;
-          } else {
-            acc[key as keyof UpdateUserData] = value;
-          }
-        }
-        return acc;
-      }, {} as UpdateUserData);
+      const updateData: UpdateUserData = Object.entries(typedData)
+        .filter(([_, value]) => value !== '')
+        .reduce((acc, [key, value]) => {
+          acc[key as keyof UpdateUserData] = value;
+          return acc;
+        }, {} as UpdateUserData);
       
       updateUserMutation.mutate({ id: Number(id), data: updateData });
     } else {
-      createUserMutation.mutate(data as CreateUserData);
+      createUserMutation.mutate(formData as CreateUserData);
     }
   };
 
@@ -193,9 +206,9 @@ const UserForm = () => {
         </div>
       </div>
 
-      <Card className="glass border shadow-sm max-w-2xl mx-auto">
+      <Card className="glass card-gradient border-0 shadow-medium max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>{isEditMode ? 'Edit User Details' : 'User Information'}</CardTitle>
+          <CardTitle className="text-gradient">{isEditMode ? 'Edit User Details' : 'User Information'}</CardTitle>
           <CardDescription>
             {isEditMode 
               ? 'Update the user information below. Leave password blank to keep unchanged.' 
@@ -218,7 +231,7 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="John Doe" />
+                          <Input {...field} placeholder="John Doe" className="bg-white/70" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -237,6 +250,7 @@ const UserForm = () => {
                             placeholder="user@example.com" 
                             type="email" 
                             disabled={isEditMode}
+                            className="bg-white/70"
                           />
                         </FormControl>
                         <FormMessage />
@@ -256,7 +270,8 @@ const UserForm = () => {
                           <Input 
                             {...field} 
                             placeholder={isEditMode ? 'Leave blank to keep unchanged' : '••••••••'} 
-                            type="password" 
+                            type="password"
+                            className="bg-white/70"
                           />
                         </FormControl>
                         <FormMessage />
@@ -271,7 +286,12 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="1234567890" type="tel" />
+                          <Input 
+                            {...field} 
+                            placeholder="1234567890" 
+                            type="tel"
+                            className="bg-white/70"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -287,7 +307,12 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>WhatsApp Number (optional)</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="1234567890" type="tel" />
+                          <Input 
+                            {...field} 
+                            placeholder="1234567890" 
+                            type="tel"
+                            className="bg-white/70"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -302,20 +327,26 @@ const UserForm = () => {
                         <FormLabel>Status</FormLabel>
                         <Select 
                           onValueChange={(value) => {
-                            // Cast the value as a UserStatus
-                            field.onChange(value as UserStatus);
+                            // Only allow values that are valid UserStatus
+                            if (USER_STATUSES.includes(value as UserStatus)) {
+                              field.onChange(value as UserStatus);
+                            } else {
+                              field.onChange('active' as UserStatus);
+                            }
                           }}
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-white/70">
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
+                            {USER_STATUSES.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -335,7 +366,7 @@ const UserForm = () => {
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white/70">
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                         </FormControl>
@@ -357,13 +388,14 @@ const UserForm = () => {
                     type="button" 
                     variant="outline" 
                     onClick={() => navigate('/users')}
+                    className="border-primary/20 hover:bg-primary/5"
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={isLoading}
-                    className="bg-primary text-white"
+                    className="btn-gradient shadow-soft"
                   >
                     {isLoading ? (
                       <>
