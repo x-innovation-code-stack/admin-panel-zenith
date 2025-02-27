@@ -35,7 +35,7 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
 // Define as const array to get proper type inference
 const USER_STATUSES = ['active', 'inactive', 'pending'] as const;
-type UserStatus = typeof USER_STATUSES[number];
+type UserStatus = (typeof USER_STATUSES)[number];
 
 const createUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -142,7 +142,7 @@ const UserForm = () => {
       
       // Check if the status from API is valid
       if (userData.status === 'active' || userData.status === 'inactive' || userData.status === 'pending') {
-        status = userData.status;
+        status = userData.status as UserStatus;
       }
       
       form.reset({
@@ -151,7 +151,7 @@ const UserForm = () => {
         password: '',
         phone: userData.phone || '',
         whatsapp_phone: userData.whatsapp_phone || '',
-        status: status,
+        status, // Just use the validated status
         role: userData.role,
       });
     }
@@ -329,10 +329,12 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Status</FormLabel>
                         <Select 
-                          onValueChange={(value) => {
-                            // Explicitly type cast to UserStatus
+                          onValueChange={(value: string) => {
+                            // Type guard to ensure value is a valid UserStatus
                             if (value === 'active' || value === 'inactive' || value === 'pending') {
                               field.onChange(value);
+                            } else {
+                              field.onChange('active');
                             }
                           }}
                           defaultValue={field.value}
@@ -343,9 +345,11 @@ const UserForm = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
+                            {USER_STATUSES.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -11,6 +11,9 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
 import UserList from "./pages/users/UserList";
 import UserForm from "./pages/users/UserForm";
+import GymList from "./pages/gyms/GymList";
+import GymForm from "./pages/gyms/GymForm";
+import GymUserList from "./pages/gyms/GymUserList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,6 +46,12 @@ const App = () => (
               <Route path="/users" element={<UserList />} />
               <Route path="/users/new" element={<UserForm />} />
               <Route path="/users/:id" element={<UserForm />} />
+
+              {/* Gym Routes */}
+              <Route path="/gyms" element={<GymList />} />
+              <Route path="/gyms/new" element={<GymForm />} />
+              <Route path="/gyms/:id" element={<GymForm />} />
+              <Route path="/gyms/:id/users" element={<GymUserList />} />
             </Route>
 
             {/* Catch all */}
