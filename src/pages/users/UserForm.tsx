@@ -151,17 +151,15 @@ const UserForm = () => {
 
   const onSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
     if (isEditMode && id) {
-      // Create a typed copy to ensure TypeScript can validate the values properly
-      const typedData = {
-        ...data,
-        status: data.status as UserStatus
-      };
-      
       // Filter out empty fields for the update
-      const updateData: UpdateUserData = Object.entries(typedData).reduce((acc, [key, value]) => {
+      const updateData: UpdateUserData = Object.entries(data).reduce((acc, [key, value]) => {
         if (value !== '') {
-          // Only add non-empty values
-          acc[key as keyof UpdateUserData] = value;
+          // For status field, we need to explicitly cast it to UserStatus
+          if (key === 'status') {
+            acc[key as keyof UpdateUserData] = value as UserStatus;
+          } else {
+            acc[key as keyof UpdateUserData] = value;
+          }
         }
         return acc;
       }, {} as UpdateUserData);
@@ -304,9 +302,8 @@ const UserForm = () => {
                         <FormLabel>Status</FormLabel>
                         <Select 
                           onValueChange={(value) => {
-                            // Validate that value is a valid UserStatus before setting it
-                            const typedValue = value as UserStatus;
-                            field.onChange(typedValue);
+                            // Cast the value as a UserStatus
+                            field.onChange(value as UserStatus);
                           }}
                           defaultValue={field.value}
                         >
