@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { LoginCredentials } from '@/types/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -39,7 +40,12 @@ const Login = () => {
   
   const onSubmit = async (data: FormData) => {
     try {
-      await login(data);
+      // Explicitly cast data to LoginCredentials since we know it matches the required structure
+      const credentials: LoginCredentials = {
+        email: data.email,
+        password: data.password
+      };
+      await login(credentials);
     } catch (error) {
       console.error('Login error:', error);
     }

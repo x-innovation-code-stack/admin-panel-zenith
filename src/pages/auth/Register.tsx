@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { RegisterData } from '@/types/auth';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -48,7 +49,15 @@ const Register = () => {
   
   const onSubmit = async (data: FormData) => {
     try {
-      await register(data);
+      // Explicitly cast data to RegisterData to ensure type compatibility
+      const registerData: RegisterData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+        phone: data.phone,
+      };
+      await register(registerData);
     } catch (error) {
       console.error('Registration error:', error);
     }

@@ -20,7 +20,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -34,12 +33,16 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
+// Define status type to ensure it's properly typed
+type UserStatus = 'active' | 'inactive' | 'pending';
+
 const createUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   phone: z.string().optional(),
   whatsapp_phone: z.string().optional(),
+  // Ensure status is properly typed
   status: z.enum(['active', 'inactive', 'pending']),
   role: z.string().min(1, { message: 'Please select a role' }),
 });
@@ -71,7 +74,7 @@ const UserForm = () => {
       password: '',
       phone: '',
       whatsapp_phone: '',
-      status: 'active' as const,
+      status: 'active' as UserStatus, // Explicitly type this as UserStatus
       role: '',
     },
   });
@@ -140,7 +143,7 @@ const UserForm = () => {
         password: '',
         phone: userData.phone || '',
         whatsapp_phone: userData.whatsapp_phone || '',
-        status: userData.status,
+        status: userData.status as UserStatus, // Cast to ensure correct type
         role: userData.role,
       });
     }
@@ -151,7 +154,12 @@ const UserForm = () => {
       // Filter out empty fields for the update
       const updateData: UpdateUserData = Object.entries(data).reduce((acc, [key, value]) => {
         if (value !== '') {
-          acc[key as keyof UpdateUserData] = value;
+          // Ensure status is properly typed
+          if (key === 'status') {
+            acc[key as keyof UpdateUserData] = value as UserStatus;
+          } else {
+            acc[key as keyof UpdateUserData] = value;
+          }
         }
         return acc;
       }, {} as UpdateUserData);
@@ -293,7 +301,7 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Status</FormLabel>
                         <Select 
-                          onValueChange={field.onChange} 
+                          onValueChange={(value: UserStatus) => field.onChange(value)} 
                           defaultValue={field.value}
                         >
                           <FormControl>
