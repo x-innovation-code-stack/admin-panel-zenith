@@ -33,9 +33,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
-// User status as a const to ensure type safety
+// Define as const array to get proper type inference
 const USER_STATUSES = ['active', 'inactive', 'pending'] as const;
-// Define status type to ensure it's properly typed
 type UserStatus = typeof USER_STATUSES[number];
 
 const createUserSchema = z.object({
@@ -44,7 +43,6 @@ const createUserSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   phone: z.string().optional(),
   whatsapp_phone: z.string().optional(),
-  // Ensure status is properly typed
   status: z.enum(USER_STATUSES),
   role: z.string().min(1, { message: 'Please select a role' }),
 });
@@ -139,47 +137,52 @@ const UserForm = () => {
   // Set form values when user data is loaded
   useEffect(() => {
     if (isEditMode && userData) {
-      // Validate the status from the API
-      const status = USER_STATUSES.includes(userData.status as UserStatus) 
-        ? (userData.status as UserStatus) 
-        : 'active' as UserStatus;
-        
+      // Type assertion for status
+      let status: UserStatus = 'active';
+      
+      // Check if the status from API is valid
+      if (userData.status === 'active' || userData.status === 'inactive' || userData.status === 'pending') {
+        status = userData.status;
+      }
+      
       form.reset({
         name: userData.name,
         email: userData.email,
         password: '',
         phone: userData.phone || '',
         whatsapp_phone: userData.whatsapp_phone || '',
-        status,
+        status: status,
         role: userData.role,
       });
     }
   }, [userData, form, isEditMode]);
 
-  const onSubmit = (formData: CreateUserFormData | UpdateUserFormData) => {
+  const onSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
     if (isEditMode && id) {
-      // Validate the status before using it
-      const status = USER_STATUSES.includes(formData.status as UserStatus) 
-        ? formData.status as UserStatus 
-        : 'active' as UserStatus;
-        
-      // Create a clean object with proper typing
-      const typedData = {
-        ...formData,
-        status
-      };
+      // Create a copy to ensure type safety
+      const submissionData = { ...data };
       
       // Filter out empty fields for the update
-      const updateData: UpdateUserData = Object.entries(typedData)
-        .filter(([_, value]) => value !== '')
-        .reduce((acc, [key, value]) => {
-          acc[key as keyof UpdateUserData] = value;
-          return acc;
-        }, {} as UpdateUserData);
+      const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
+        if (value !== '') {
+          if (key === 'status') {
+            // Explicitly handle the status field with type assertion
+            const typedStatus = value as unknown;
+            if (typedStatus === 'active' || typedStatus === 'inactive' || typedStatus === 'pending') {
+              acc[key as keyof UpdateUserData] = typedStatus as UserStatus;
+            } else {
+              acc[key as keyof UpdateUserData] = 'active' as UserStatus;
+            }
+          } else {
+            acc[key as keyof UpdateUserData] = value;
+          }
+        }
+        return acc;
+      }, {} as UpdateUserData);
       
       updateUserMutation.mutate({ id: Number(id), data: updateData });
     } else {
-      createUserMutation.mutate(formData as CreateUserData);
+      createUserMutation.mutate(data as CreateUserData);
     }
   };
 
@@ -327,11 +330,9 @@ const UserForm = () => {
                         <FormLabel>Status</FormLabel>
                         <Select 
                           onValueChange={(value) => {
-                            // Only allow values that are valid UserStatus
-                            if (USER_STATUSES.includes(value as UserStatus)) {
-                              field.onChange(value as UserStatus);
-                            } else {
-                              field.onChange('active' as UserStatus);
+                            // Explicitly type cast to UserStatus
+                            if (value === 'active' || value === 'inactive' || value === 'pending') {
+                              field.onChange(value);
                             }
                           }}
                           defaultValue={field.value}
@@ -342,11 +343,9 @@ const UserForm = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {USER_STATUSES.map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

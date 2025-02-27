@@ -5,45 +5,45 @@
 
 @layer base {
   :root {
-    /* Modern vibrant theme with teal/blue gradient */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Modern theme with hot pink, red and green */
+    --background: 0 0% 98%;
+    --foreground: 320 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 320 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 320 10% 15%;
 
-    --primary: 196 80% 45%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 335 90% 50%; /* Hot pink */
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 142 76% 36%; /* Green */
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 338 20% 95%;
+    --muted-foreground: 320 10% 45%;
 
-    --accent: 196 80% 93%;
-    --accent-foreground: 196 80% 25%;
+    --accent: 142 70% 95%;
+    --accent-foreground: 142 76% 26%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%; /* Red */
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 196 80% 45%;
+    --border: 320 10% 90%;
+    --input: 320 10% 90%;
+    --ring: 335 90% 50%;
 
     --radius: 0.75rem;
 
-    /* Sidebar specific colors - teal/blue theme */
-    --sidebar-background: 196 80% 45%;
+    /* Sidebar specific colors - hot pink/green theme */
+    --sidebar-background: 335 90% 50%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 196 80% 45%;
-    --sidebar-accent: 196 90% 55%;
+    --sidebar-primary-foreground: 335 90% 50%;
+    --sidebar-accent: 142 76% 36%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 196 90% 55%;
+    --sidebar-border: 335 90% 60%;
     --sidebar-ring: 0 0% 100%;
   }
 }
@@ -55,7 +55,7 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: linear-gradient(to bottom right, rgba(236, 252, 255, 0.5), rgba(205, 240, 255, 0.7));
+    background-image: linear-gradient(to bottom right, rgba(255, 240, 250, 0.5), rgba(240, 255, 240, 0.7));
     background-attachment: fixed;
   }
   
@@ -69,12 +69,12 @@
 
   /* Add gradient button effect */
   .btn-gradient {
-    @apply bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] text-white hover:from-[#0ea5e9] hover:to-[#06b6d4];
+    @apply bg-gradient-to-r from-[#D946EF] to-[#ea384c] text-white hover:from-[#ea384c] hover:to-[#D946EF];
   }
 
   /* Add subtle card gradient */
   .card-gradient {
-    @apply bg-gradient-to-br from-white to-accent/30;
+    @apply bg-gradient-to-br from-white to-accent/40;
   }
 }
 
@@ -84,11 +84,11 @@
   }
   
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-[#0ea5e9] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-destructive bg-clip-text text-transparent;
   }
   
   .border-gradient {
-    border-image: linear-gradient(to right, #06b6d4, #0ea5e9) 1;
+    border-image: linear-gradient(to right, #D946EF, #ea384c) 1;
   }
 
   /* Add subtle shadow effects */
@@ -98,5 +98,9 @@
   
   .shadow-medium {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .green-accent {
+    @apply bg-gradient-to-r from-secondary to-secondary/80 text-white;
   }
 }
