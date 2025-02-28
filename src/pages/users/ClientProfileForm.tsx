@@ -171,12 +171,14 @@ const ClientProfileForm = () => {
     queryKey: ['client-profile', userId],
     queryFn: () => profileService.getClientProfile(userId),
     enabled: !!userId,
-    onSuccess: (data) => {
-      if (data) {
-        setIsUpdateMode(true);
-      }
-    },
   });
+
+  // Update update mode when profile data is fetched
+  useEffect(() => {
+    if (profileData) {
+      setIsUpdateMode(true);
+    }
+  }, [profileData]);
 
   // Create or update profile mutation
   const createOrUpdateProfileMutation = useMutation({
@@ -244,7 +246,20 @@ const ClientProfileForm = () => {
     if (isUpdateMode) {
       updateProfileMutation.mutate(data);
     } else {
-      createOrUpdateProfileMutation.mutate(data);
+      // Ensure all required fields are included for create operation
+      createOrUpdateProfileMutation.mutate({
+        age: data.age,
+        gender: data.gender,
+        height: data.height,
+        current_weight: data.current_weight,
+        target_weight: data.target_weight,
+        activity_level: data.activity_level,
+        diet_type: data.diet_type,
+        health_conditions: data.health_conditions,
+        allergies: data.allergies,
+        recovery_needs: data.recovery_needs,
+        meal_preferences: data.meal_preferences,
+      });
     }
   };
 

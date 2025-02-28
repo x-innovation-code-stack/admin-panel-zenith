@@ -166,11 +166,16 @@ const UserForm = () => {
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // Explicitly handle the status field with type guard
-            const typedStatus = value as string;
-            if (typedStatus === 'active' || typedStatus === 'inactive' || typedStatus === 'pending') {
-              acc[key as keyof UpdateUserData] = typedStatus as UserStatus;
+            // Explicitly handle the status field with type guard for UserStatus
+            if (
+              value === 'active' || 
+              value === 'inactive' || 
+              value === 'pending'
+            ) {
+              // We know this is a valid UserStatus now
+              acc[key as keyof UpdateUserData] = value as UserStatus;
             } else {
+              // Default to active if somehow an invalid value got through
               acc[key as keyof UpdateUserData] = 'active' as UserStatus;
             }
           } else {
@@ -329,12 +334,12 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Status</FormLabel>
                         <Select 
-                          onValueChange={(value: string) => {
+                          onValueChange={(value) => {
                             // Type guard to ensure value is a valid UserStatus
                             if (value === 'active' || value === 'inactive' || value === 'pending') {
-                              field.onChange(value);
+                              field.onChange(value as UserStatus);
                             } else {
-                              field.onChange('active');
+                              field.onChange('active' as UserStatus);
                             }
                           }}
                           defaultValue={field.value}

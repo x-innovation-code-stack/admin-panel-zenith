@@ -122,8 +122,13 @@ const GymForm = () => {
         data: formData 
       });
     } else {
-      // For create, we need all fields which are already required by zod
-      createGymMutation.mutate(formData);
+      // For create, all fields are required
+      // Since the form schema ensures all fields are present, we can safely pass formData as CreateGymData
+      createGymMutation.mutate({
+        name: formData.name,
+        address: formData.address,
+        phone: formData.phone
+      });
     }
   };
 
