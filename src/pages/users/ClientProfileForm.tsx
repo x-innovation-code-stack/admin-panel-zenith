@@ -147,7 +147,7 @@ const ClientProfileForm = () => {
     enabled: !!userId,
   });
 
-  // Form setup with empty initial values
+  // Form setup with empty initial values but ensures arrays are initialized properly
   const form = useForm<FormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -158,10 +158,10 @@ const ClientProfileForm = () => {
       target_weight: 0,
       activity_level: 'moderately_active',
       diet_type: 'standard',
-      health_conditions: [],
-      allergies: [],
-      recovery_needs: [],
-      meal_preferences: [],
+      health_conditions: [], // Initialize as empty array
+      allergies: [], // Initialize as empty array
+      recovery_needs: [], // Initialize as empty array
+      meal_preferences: [], // Initialize as empty array
     },
     mode: 'onChange',
   });
@@ -186,10 +186,10 @@ const ClientProfileForm = () => {
           target_weight: profileData.target_weight,
           activity_level: profileData.activity_level,
           diet_type: profileData.diet_type,
-          health_conditions: profileData.health_conditions,
-          allergies: profileData.allergies,
-          recovery_needs: profileData.recovery_needs,
-          meal_preferences: profileData.meal_preferences,
+          health_conditions: Array.isArray(profileData.health_conditions) ? profileData.health_conditions : [],
+          allergies: Array.isArray(profileData.allergies) ? profileData.allergies : [],
+          recovery_needs: Array.isArray(profileData.recovery_needs) ? profileData.recovery_needs : [],
+          meal_preferences: Array.isArray(profileData.meal_preferences) ? profileData.meal_preferences : [],
         });
       } else {
         // Only for new profiles - initialize with reasonable defaults
@@ -266,22 +266,19 @@ const ClientProfileForm = () => {
       return;
     }
 
+    // Ensure all array fields are initialized
+    const safeData = {
+      ...data,
+      health_conditions: Array.isArray(data.health_conditions) ? data.health_conditions : [],
+      allergies: Array.isArray(data.allergies) ? data.allergies : [],
+      recovery_needs: Array.isArray(data.recovery_needs) ? data.recovery_needs : [],
+      meal_preferences: Array.isArray(data.meal_preferences) ? data.meal_preferences : [],
+    };
+
     if (isUpdateMode) {
-      updateProfileMutation.mutate(data);
+      updateProfileMutation.mutate(safeData);
     } else {
-      createOrUpdateProfileMutation.mutate({
-        age: data.age,
-        gender: data.gender,
-        height: data.height,
-        current_weight: data.current_weight,
-        target_weight: data.target_weight,
-        activity_level: data.activity_level,
-        diet_type: data.diet_type,
-        health_conditions: data.health_conditions,
-        allergies: data.allergies,
-        recovery_needs: data.recovery_needs,
-        meal_preferences: data.meal_preferences,
-      });
+      createOrUpdateProfileMutation.mutate(safeData);
     }
   };
 
@@ -290,6 +287,36 @@ const ClientProfileForm = () => {
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  // Safe handler for checkboxes
+  const handleCheckboxChange = (
+    field: { value: string[]; onChange: (value: string[]) => void },
+    itemValue: string,
+    checked: boolean,
+    isExclusive: boolean = false
+  ) => {
+    // Ensure field.value is an array
+    const currentValues = Array.isArray(field.value) ? field.value : [];
+    
+    if (isExclusive && itemValue === 'none') {
+      // If 'none' is selected, clear other values
+      field.onChange(checked ? ['none'] : []);
+    } else if (isExclusive) {
+      // If another value is selected, remove 'none'
+      const newValues = checked
+        ? [...currentValues.filter(v => v !== 'none'), itemValue]
+        : currentValues.filter(v => v !== itemValue);
+      
+      field.onChange(newValues);
+    } else {
+      // Normal case - toggle the value
+      const newValues = checked
+        ? [...currentValues, itemValue]
+        : currentValues.filter(v => v !== itemValue);
+      
+      field.onChange(newValues);
+    }
   };
 
   const isLoading = isProfileLoading || createOrUpdateProfileMutation.isPending || updateProfileMutation.isPending || !formInitialized;
@@ -543,15 +570,9 @@ const ClientProfileForm = () => {
                                 >
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value?.includes(preference.value)}
+                                      checked={Array.isArray(field.value) && field.value.includes(preference.value)}
                                       onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, preference.value])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== preference.value
-                                              )
-                                            );
+                                        handleCheckboxChange(field, preference.value, !!checked);
                                       }}
                                     />
                                   </FormControl>
@@ -596,21 +617,9 @@ const ClientProfileForm = () => {
                                 >
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value?.includes(condition.value)}
+                                      checked={Array.isArray(field.value) && field.value.includes(condition.value)}
                                       onCheckedChange={(checked) => {
-                                        if (condition.value === 'none') {
-                                          return checked 
-                                            ? field.onChange(['none']) 
-                                            : field.onChange([]);
-                                        }
-                                        
-                                        const newValue = checked
-                                          ? [...field.value.filter(v => v !== 'none'), condition.value]
-                                          : field.value?.filter(
-                                              (value) => value !== condition.value
-                                            );
-                                        
-                                        return field.onChange(newValue);
+                                        handleCheckboxChange(field, condition.value, !!checked, true);
                                       }}
                                     />
                                   </FormControl>
@@ -639,21 +648,9 @@ const ClientProfileForm = () => {
                                 >
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value?.includes(allergy.value)}
+                                      checked={Array.isArray(field.value) && field.value.includes(allergy.value)}
                                       onCheckedChange={(checked) => {
-                                        if (allergy.value === 'none') {
-                                          return checked 
-                                            ? field.onChange(['none']) 
-                                            : field.onChange([]);
-                                        }
-                                        
-                                        const newValue = checked
-                                          ? [...field.value.filter(v => v !== 'none'), allergy.value]
-                                          : field.value?.filter(
-                                              (value) => value !== allergy.value
-                                            );
-                                        
-                                        return field.onChange(newValue);
+                                        handleCheckboxChange(field, allergy.value, !!checked, true);
                                       }}
                                     />
                                   </FormControl>
@@ -698,15 +695,9 @@ const ClientProfileForm = () => {
                                 >
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value?.includes(need.value)}
+                                      checked={Array.isArray(field.value) && field.value.includes(need.value)}
                                       onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, need.value])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== need.value
-                                              )
-                                            );
+                                        handleCheckboxChange(field, need.value, !!checked);
                                       }}
                                     />
                                   </FormControl>

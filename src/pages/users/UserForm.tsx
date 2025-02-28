@@ -166,9 +166,11 @@ const UserForm = () => {
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // We know this is a valid UserStatus now
-            if (USER_STATUSES.includes(value as any)) {
+            // Safe check for status
+            if (value === 'active' || value === 'inactive' || value === 'pending') {
               acc[key as keyof UpdateUserData] = value as UserStatus;
+            } else {
+              acc[key as keyof UpdateUserData] = 'active' as UserStatus;
             }
           } else {
             acc[key as keyof UpdateUserData] = value;
@@ -184,14 +186,6 @@ const UserForm = () => {
   };
 
   const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
-
-  // Function to safely handle status changes
-  const handleStatusChange = (value: string) => {
-    // Only set the value if it's one of our valid statuses
-    if (USER_STATUSES.includes(value as UserStatus)) {
-      form.setValue('status', value as UserStatus);
-    }
-  };
 
   return (
     <>
@@ -334,7 +328,12 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Status</FormLabel>
                         <Select 
-                          onValueChange={handleStatusChange}
+                          onValueChange={(value) => {
+                            // Only set if it's a valid status
+                            if (USER_STATUSES.includes(value as UserStatus)) {
+                              field.onChange(value as UserStatus);
+                            }
+                          }}
                           defaultValue={field.value}
                         >
                           <FormControl>
