@@ -335,6 +335,7 @@ const UserForm = () => {
                             }
                           }}
                           defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="bg-white/70">
@@ -364,6 +365,7 @@ const UserForm = () => {
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="bg-white/70">

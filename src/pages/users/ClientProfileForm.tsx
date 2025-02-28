@@ -128,7 +128,6 @@ const ClientProfileForm = () => {
   const { id } = useParams();
   const userId = id ? parseInt(id) : 0;
   const [isUpdateMode, setIsUpdateMode] = useState(false);
-  const [formInitialized, setFormInitialized] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
     basics: true,
     dietary: true,
@@ -140,6 +139,25 @@ const ClientProfileForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Form setup with empty initial values but ensures arrays are initialized properly
+  const form = useForm<FormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      age: 30,
+      gender: 'male',
+      height: 170,
+      current_weight: 70,
+      target_weight: 70,
+      activity_level: 'moderately_active',
+      diet_type: 'standard',
+      health_conditions: ['none'],
+      allergies: ['none'],
+      recovery_needs: [],
+      meal_preferences: [],
+    },
+    mode: 'onChange',
+  });
+
   // Fetch user data to display name
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
@@ -147,69 +165,32 @@ const ClientProfileForm = () => {
     enabled: !!userId,
   });
 
-  // Form setup with empty initial values but ensures arrays are initialized properly
-  const form = useForm<FormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      age: 0,
-      gender: 'male',
-      height: 0,
-      current_weight: 0,
-      target_weight: 0,
-      activity_level: 'moderately_active',
-      diet_type: 'standard',
-      health_conditions: [], // Initialize as empty array
-      allergies: [], // Initialize as empty array
-      recovery_needs: [], // Initialize as empty array
-      meal_preferences: [], // Initialize as empty array
-    },
-    mode: 'onChange',
-  });
-
   // Fetch client profile data
   const { data: profileData, isLoading: isProfileLoading } = useQuery({
     queryKey: ['client-profile', userId],
     queryFn: () => profileService.getClientProfile(userId),
     enabled: !!userId,
-  });
-
-  // Initialize form with data
-  useEffect(() => {
-    if (!formInitialized && !isProfileLoading) {
-      if (profileData) {
+    // When data is received, update the form
+    onSuccess: (data) => {
+      if (data) {
+        console.log("Profile data loaded:", data);
         setIsUpdateMode(true);
         form.reset({
-          age: profileData.age,
-          gender: profileData.gender,
-          height: profileData.height,
-          current_weight: profileData.current_weight,
-          target_weight: profileData.target_weight,
-          activity_level: profileData.activity_level,
-          diet_type: profileData.diet_type,
-          health_conditions: Array.isArray(profileData.health_conditions) ? profileData.health_conditions : [],
-          allergies: Array.isArray(profileData.allergies) ? profileData.allergies : [],
-          recovery_needs: Array.isArray(profileData.recovery_needs) ? profileData.recovery_needs : [],
-          meal_preferences: Array.isArray(profileData.meal_preferences) ? profileData.meal_preferences : [],
-        });
-      } else {
-        // Only for new profiles - initialize with reasonable defaults
-        form.reset({
-          age: 30,
-          gender: 'male',
-          height: 170,
-          current_weight: 70,
-          target_weight: 70,
-          activity_level: 'moderately_active',
-          diet_type: 'standard',
-          health_conditions: ['none'],
-          allergies: ['none'],
-          recovery_needs: [],
-          meal_preferences: [],
+          age: data.age,
+          gender: data.gender,
+          height: data.height,
+          current_weight: data.current_weight,
+          target_weight: data.target_weight,
+          activity_level: data.activity_level,
+          diet_type: data.diet_type,
+          health_conditions: Array.isArray(data.health_conditions) ? data.health_conditions : [],
+          allergies: Array.isArray(data.allergies) ? data.allergies : [],
+          recovery_needs: Array.isArray(data.recovery_needs) ? data.recovery_needs : [],
+          meal_preferences: Array.isArray(data.meal_preferences) ? data.meal_preferences : [],
         });
       }
-      setFormInitialized(true);
     }
-  }, [profileData, isProfileLoading, form, formInitialized]);
+  });
 
   // Create or update profile mutation
   const createOrUpdateProfileMutation = useMutation({
@@ -278,7 +259,22 @@ const ClientProfileForm = () => {
     if (isUpdateMode) {
       updateProfileMutation.mutate(safeData);
     } else {
-      createOrUpdateProfileMutation.mutate(safeData);
+      // For create operation, we need to ensure all required fields are provided
+      const createData: CreateProfileData = {
+        age: safeData.age,
+        gender: safeData.gender,
+        height: safeData.height,
+        current_weight: safeData.current_weight,
+        target_weight: safeData.target_weight,
+        activity_level: safeData.activity_level,
+        diet_type: safeData.diet_type,
+        health_conditions: safeData.health_conditions,
+        allergies: safeData.allergies,
+        recovery_needs: safeData.recovery_needs,
+        meal_preferences: safeData.meal_preferences,
+      };
+      
+      createOrUpdateProfileMutation.mutate(createData);
     }
   };
 
@@ -319,7 +315,7 @@ const ClientProfileForm = () => {
     }
   };
 
-  const isLoading = isProfileLoading || createOrUpdateProfileMutation.isPending || updateProfileMutation.isPending || !formInitialized;
+  const isLoading = isProfileLoading || createOrUpdateProfileMutation.isPending || updateProfileMutation.isPending;
 
   return (
     <>
@@ -403,6 +399,7 @@ const ClientProfileForm = () => {
                             <Select 
                               onValueChange={field.onChange} 
                               defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger className="bg-white/70">
@@ -490,6 +487,7 @@ const ClientProfileForm = () => {
                             <Select 
                               onValueChange={field.onChange} 
                               defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger className="bg-white/70">
@@ -537,6 +535,7 @@ const ClientProfileForm = () => {
                             <Select 
                               onValueChange={field.onChange} 
                               defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger className="bg-white/70">
