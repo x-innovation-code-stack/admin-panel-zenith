@@ -166,16 +166,19 @@ const UserForm = () => {
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // Explicitly handle the status field with type guard for UserStatus
+            // Explicitly handle the status field
+            const statusValue = value as unknown; // First cast to unknown
+            
+            // Then perform type guard and cast to the specific enum type
             if (
-              value === 'active' || 
-              value === 'inactive' || 
-              value === 'pending'
+              statusValue === 'active' || 
+              statusValue === 'inactive' || 
+              statusValue === 'pending'
             ) {
-              // We know this is a valid UserStatus now
-              acc[key as keyof UpdateUserData] = value as UserStatus;
+              // Use a type assertion that we know is safe after our check
+              acc[key as keyof UpdateUserData] = statusValue as UserStatus;
             } else {
-              // Default to active if somehow an invalid value got through
+              // Default case - use a safe value
               acc[key as keyof UpdateUserData] = 'active' as UserStatus;
             }
           } else {
@@ -192,6 +195,16 @@ const UserForm = () => {
   };
 
   const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
+
+  // Function to handle status change with proper type handling
+  const handleStatusChange = (value: string) => {
+    const isValidStatus = USER_STATUSES.includes(value as UserStatus);
+    if (isValidStatus) {
+      form.setValue('status', value as UserStatus);
+    } else {
+      form.setValue('status', 'active' as UserStatus);
+    }
+  };
 
   return (
     <>
@@ -334,14 +347,7 @@ const UserForm = () => {
                       <FormItem>
                         <FormLabel>Status</FormLabel>
                         <Select 
-                          onValueChange={(value) => {
-                            // Type guard to ensure value is a valid UserStatus
-                            if (value === 'active' || value === 'inactive' || value === 'pending') {
-                              field.onChange(value as UserStatus);
-                            } else {
-                              field.onChange('active' as UserStatus);
-                            }
-                          }}
+                          onValueChange={handleStatusChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
