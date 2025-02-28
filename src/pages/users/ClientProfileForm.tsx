@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -42,7 +41,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2, Save, User } from 'lucide-react';
 
-// Define available options
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
@@ -109,7 +107,6 @@ const MEAL_PREFERENCES = [
   { value: 'small_frequent', label: 'Small Frequent Meals' },
 ];
 
-// Form schema with validation
 const profileSchema = z.object({
   age: z.number().min(18, { message: 'Age must be at least 18' }).max(100, { message: 'Age must be at most 100' }),
   gender: z.enum(['male', 'female', 'other'] as const),
@@ -141,46 +138,71 @@ const ClientProfileForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user data to display name
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => userService.getUser(userId),
     enabled: !!userId,
   });
 
-  // Form setup with default values
   const form = useForm<FormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      age: 30,
+      age: 0,
       gender: 'male',
-      height: 170,
-      current_weight: 70,
-      target_weight: 70,
+      height: 0,
+      current_weight: 0,
+      target_weight: 0,
       activity_level: 'moderately_active',
       diet_type: 'standard',
-      health_conditions: ['none'],
-      allergies: ['none'],
+      health_conditions: [],
+      allergies: [],
       recovery_needs: [],
       meal_preferences: [],
     },
   });
 
-  // Fetch client profile data
   const { data: profileData, isLoading: isProfileLoading } = useQuery({
     queryKey: ['client-profile', userId],
     queryFn: () => profileService.getClientProfile(userId),
     enabled: !!userId,
   });
 
-  // Update update mode when profile data is fetched
   useEffect(() => {
     if (profileData) {
       setIsUpdateMode(true);
+      
+      form.reset({
+        age: profileData.age,
+        gender: profileData.gender,
+        height: profileData.height,
+        current_weight: profileData.current_weight,
+        target_weight: profileData.target_weight,
+        activity_level: profileData.activity_level,
+        diet_type: profileData.diet_type,
+        health_conditions: profileData.health_conditions,
+        allergies: profileData.allergies,
+        recovery_needs: profileData.recovery_needs,
+        meal_preferences: profileData.meal_preferences,
+      });
+    } else {
+      if (userData) {
+        form.reset({
+          age: 30,
+          gender: 'male',
+          height: 170,
+          current_weight: 70,
+          target_weight: 70,
+          activity_level: 'moderately_active',
+          diet_type: 'standard',
+          health_conditions: ['none'],
+          allergies: ['none'],
+          recovery_needs: [],
+          meal_preferences: [],
+        });
+      }
     }
-  }, [profileData]);
+  }, [profileData, userData, form]);
 
-  // Create or update profile mutation
   const createOrUpdateProfileMutation = useMutation({
     mutationFn: (data: CreateProfileData) => 
       profileService.createOrUpdateClientProfile(userId, data),
@@ -202,7 +224,6 @@ const ClientProfileForm = () => {
     },
   });
 
-  // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: UpdateProfileData) => 
       profileService.updateClientProfile(userId, data),
@@ -222,31 +243,10 @@ const ClientProfileForm = () => {
     },
   });
 
-  // Set form values when profile data is loaded
-  useEffect(() => {
-    if (profileData) {
-      // Reset form with profile data
-      form.reset({
-        age: profileData.age,
-        gender: profileData.gender,
-        height: profileData.height,
-        current_weight: profileData.current_weight,
-        target_weight: profileData.target_weight,
-        activity_level: profileData.activity_level,
-        diet_type: profileData.diet_type,
-        health_conditions: profileData.health_conditions,
-        allergies: profileData.allergies,
-        recovery_needs: profileData.recovery_needs,
-        meal_preferences: profileData.meal_preferences,
-      });
-    }
-  }, [profileData, form]);
-
   const onSubmit = (data: FormData) => {
     if (isUpdateMode) {
       updateProfileMutation.mutate(data);
     } else {
-      // Ensure all required fields are included for create operation
       createOrUpdateProfileMutation.mutate({
         age: data.age,
         gender: data.gender,
@@ -313,7 +313,6 @@ const ClientProfileForm = () => {
           ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Basic Information Section */}
                 <Collapsible open={openSections.basics} className="border rounded-lg overflow-hidden">
                   <CollapsibleTrigger asChild>
                     <Button
@@ -467,7 +466,6 @@ const ClientProfileForm = () => {
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Dietary Preferences */}
                 <Collapsible open={openSections.dietary} className="border rounded-lg overflow-hidden">
                   <CollapsibleTrigger asChild>
                     <Button
@@ -549,7 +547,6 @@ const ClientProfileForm = () => {
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Health Conditions */}
                 <Collapsible open={openSections.health} className="border rounded-lg overflow-hidden">
                   <CollapsibleTrigger asChild>
                     <Button
@@ -579,7 +576,6 @@ const ClientProfileForm = () => {
                                     <Checkbox
                                       checked={field.value?.includes(condition.value)}
                                       onCheckedChange={(checked) => {
-                                        // Special handling for 'none' - exclusive selection
                                         if (condition.value === 'none') {
                                           return checked 
                                             ? field.onChange(['none']) 
@@ -623,7 +619,6 @@ const ClientProfileForm = () => {
                                     <Checkbox
                                       checked={field.value?.includes(allergy.value)}
                                       onCheckedChange={(checked) => {
-                                        // Special handling for 'none' - exclusive selection
                                         if (allergy.value === 'none') {
                                           return checked 
                                             ? field.onChange(['none']) 
@@ -654,7 +649,6 @@ const ClientProfileForm = () => {
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Fitness Goals */}
                 <Collapsible open={openSections.goals} className="border rounded-lg overflow-hidden">
                   <CollapsibleTrigger asChild>
                     <Button
