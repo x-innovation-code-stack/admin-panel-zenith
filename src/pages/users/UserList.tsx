@@ -1,11 +1,9 @@
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import userService, { UserFilters } from '@/services/userService';
-import { User } from '@/types/auth';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
@@ -14,13 +12,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,9 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Badge } from '@/components/ui/badge';
-import { Edit, Plus, Search, Trash, UserPlus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,96 +26,125 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  ClipboardList, 
+  Edit, 
+  Loader2, 
+  Plus, 
+  Search, 
+  Trash2, 
+  Users
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const UserList = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [filters, setFilters] = useState<UserFilters>({
+    role: '',
+    status: '',
+    search: '',
+    page: 1,
+  });
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const filters: UserFilters = {
-    search: debouncedSearch,
-    role: roleFilter,
-    status: statusFilter,
-    page: currentPage
-  };
-
+  // Fetch users
   const {
     data: userData,
     isLoading,
     isError,
-    refetch
+    error,
   } = useQuery({
     queryKey: ['users', filters],
     queryFn: () => userService.getUsers(filters),
   });
 
-  const {
-    data: roles,
-    isLoading: rolesLoading
-  } = useQuery({
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: number) => userService.deleteUser(id),
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setUserToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete user',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Fetch roles for filter
+  const { data: roles } = useQuery({
     queryKey: ['roles'],
     queryFn: () => userService.getRoles(),
   });
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
+  // Handler for deleting a user
+  const handleDelete = (id: number) => {
+    setUserToDelete(id);
+  };
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const handleDeleteUser = async () => {
-    if (!userToDelete) return;
-
-    try {
-      await userService.deleteUser(userToDelete.id);
-      toast({
-        title: 'User deleted',
-        description: `${userToDelete.name} has been removed successfully.`,
-      });
-      refetch();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete user. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setUserToDelete(null);
+  // Handler for confirming deletion
+  const confirmDelete = () => {
+    if (userToDelete) {
+      deleteUserMutation.mutate(userToDelete);
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  // Handle filter changes
+  const handleFilterChange = (key: keyof UserFilters, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+  };
+
+  // Handle search
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleFilterChange('search', e.currentTarget.value);
+    }
+  };
+
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500">Active</Badge>;
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'pending':
-        return <Badge variant="outline" className="text-amber-500 border-amber-500">Pending</Badge>;
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -136,190 +153,265 @@ const UserList = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-muted-foreground">Manage user accounts</p>
+          <p className="text-muted-foreground">Manage system users and their access</p>
         </div>
-        <Button asChild className="bg-primary text-white">
-          <Link to="/users/new">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Link>
+        <Button
+          onClick={() => navigate('/users/new')}
+          className="btn-gradient shadow-soft"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add New User
         </Button>
       </div>
 
-      <Card className="glass border shadow-sm">
+      <Card className="glass card-gradient border-0 shadow-medium mb-6">
         <CardHeader className="pb-3">
-          <CardTitle>User List</CardTitle>
+          <CardTitle className="text-gradient flex items-center">
+            <Users className="mr-2 h-5 w-5" />
+            User Management
+          </CardTitle>
           <CardDescription>
-            View and manage all user accounts in the system
+            View and manage all users in the system
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  className="pl-8 bg-white/70"
+                  defaultValue={filters.search}
+                  onKeyDown={handleSearch}
+                />
+              </div>
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All roles</SelectItem>
-                {!rolesLoading && roles?.map((role: string) => (
-                  <SelectItem key={role} value={role}>
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Select
+                value={filters.role}
+                onValueChange={(value) => handleFilterChange('role', value)}
+              >
+                <SelectTrigger className="w-[180px] bg-white/70">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Roles</SelectItem>
+                  {roles?.map((role: string) => (
+                    <SelectItem key={role} value={role}>
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
+                <SelectTrigger className="w-[180px] bg-white/70">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5).fill(0).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : isError ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                      Error loading users. Please try again.
-                    </TableCell>
-                  </TableRow>
-                ) : userData?.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                      No users found. Try adjusting your filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  userData?.data.map((user) => (
-                    <TableRow key={user.id} className="group transition-colors hover:bg-muted/30">
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2 opacity-70 group-hover:opacity-100">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link to={`/users/${user.id}`}>
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => setUserToDelete(user)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the user
-                                  account for <span className="font-semibold">{userToDelete?.name}</span>.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setUserToDelete(null)}>
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={handleDeleteUser}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {userData && userData.meta && (
-            <div className="mt-4 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  
-                  {Array.from({ length: userData.meta.last_page }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, userData.meta.last_page))}
-                      className={currentPage === userData.meta.last_page ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+          {isLoading ? (
+            // Loading state
+            <div className="space-y-4">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : isError ? (
+            // Error state
+            <div className="text-center py-8 text-destructive">
+              <p>Failed to load users: {(error as Error).message}</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : userData?.data.length === 0 ? (
+            // Empty state
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/80" />
+              <h3 className="mt-4 text-lg font-semibold">No users found</h3>
+              <p className="text-muted-foreground mt-2">
+                {filters.role || filters.status || filters.search
+                  ? 'Try changing your search or filters'
+                  : 'Start by adding your first user to the system'}
+              </p>
+              <Button
+                className="mt-4 btn-gradient"
+                onClick={() => navigate('/users/new')}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add New User
+              </Button>
+            </div>
+          ) : (
+            // Data loaded successfully
+            <>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userData?.data.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="bg-primary/10">
+                              <AvatarFallback className="text-primary">
+                                {getInitials(user.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.name}</div>
+                              <div className="text-sm text-muted-foreground">{user.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(user.status)} capitalize`}>
+                            {user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{user.phone || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => navigate(`/users/${user.id}/profile`)}
+                              title="Client Profile"
+                            >
+                              <ClipboardList className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => navigate(`/users/${user.id}`)}
+                              title="Edit User"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleDelete(user.id)}
+                              title="Delete User"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {userData?.meta && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(userData.meta.current_page - 1) * userData.meta.per_page + 1} to{' '}
+                    {Math.min(
+                      userData.meta.current_page * userData.meta.per_page,
+                      userData.meta.total
+                    )}{' '}
+                    of {userData.meta.total} users
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(userData.meta.current_page - 1)}
+                      disabled={userData.meta.current_page === 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(userData.meta.current_page + 1)}
+                      disabled={userData.meta.current_page === userData.meta.last_page}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUserToDelete(null)}
+              disabled={deleteUserMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

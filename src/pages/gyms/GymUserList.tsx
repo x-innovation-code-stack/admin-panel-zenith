@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import gymService from '@/services/gymService';
 import userService from '@/services/userService';
 import { GymUser, GymUserRole, GymUserStatus, AddGymUserData } from '@/types/gym';
+import { User } from '@/types/auth';
 import {
   Select,
   SelectContent,
@@ -36,7 +37,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -79,6 +79,7 @@ const GymUserList = () => {
   const { data: gym } = useQuery({
     queryKey: ['gym', gymId],
     queryFn: () => gymService.getGym(Number(gymId)),
+    enabled: !!gymId,
   });
 
   // Fetch gym users with filters
@@ -94,12 +95,13 @@ const GymUserList = () => {
       selectedRole || undefined, 
       selectedStatus || undefined
     ),
+    enabled: !!gymId,
   });
 
   // Fetch available users for adding
-  const { data: availableUsers } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ['users'],
-    queryFn: userService.getUsers,
+    queryFn: () => userService.getUsers(), // This will now return the correct type
   });
 
   // Add user to gym mutation
@@ -157,7 +159,12 @@ const GymUserList = () => {
 
   // Handle form submission
   const onSubmit = (data: AddUserFormData) => {
-    addUserMutation.mutate(data);
+    // Ensure all required fields are present
+    addUserMutation.mutate({
+      user_id: data.user_id,
+      role: data.role,
+      status: data.status
+    });
   };
 
   // Handle user removal
@@ -174,6 +181,9 @@ const GymUserList = () => {
       });
     }
   };
+
+  // Get users array from userData
+  const users = userData?.data || [];
 
   return (
     <>
@@ -376,7 +386,7 @@ const GymUserList = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableUsers?.map((user) => (
+                        {users.map((user: User) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.name} ({user.email})
                           </SelectItem>

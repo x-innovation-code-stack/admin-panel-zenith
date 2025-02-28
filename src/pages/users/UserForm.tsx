@@ -35,7 +35,7 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
 // Define as const array to get proper type inference
 const USER_STATUSES = ['active', 'inactive', 'pending'] as const;
-type UserStatus = (typeof USER_STATUSES)[number];
+type UserStatus = typeof USER_STATUSES[number];
 
 const createUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -137,7 +137,7 @@ const UserForm = () => {
   // Set form values when user data is loaded
   useEffect(() => {
     if (isEditMode && userData) {
-      // Type assertion for status
+      // Type assertion for status with type guard
       let status: UserStatus = 'active';
       
       // Check if the status from API is valid
@@ -166,8 +166,8 @@ const UserForm = () => {
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // Explicitly handle the status field with type assertion
-            const typedStatus = value as unknown;
+            // Explicitly handle the status field with type guard
+            const typedStatus = value as string;
             if (typedStatus === 'active' || typedStatus === 'inactive' || typedStatus === 'pending') {
               acc[key as keyof UpdateUserData] = typedStatus as UserStatus;
             } else {

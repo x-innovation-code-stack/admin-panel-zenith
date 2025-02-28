@@ -114,11 +114,16 @@ const GymForm = () => {
     }
   }, [gymData, form, isEditMode]);
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (formData: FormData) => {
     if (isEditMode && id) {
-      updateGymMutation.mutate({ id: Number(id), data });
+      // For update, we can pass partial data
+      updateGymMutation.mutate({ 
+        id: Number(id), 
+        data: formData 
+      });
     } else {
-      createGymMutation.mutate(data);
+      // For create, we need all fields which are already required by zod
+      createGymMutation.mutate(formData);
     }
   };
 
