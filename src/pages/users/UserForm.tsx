@@ -142,7 +142,7 @@ const UserForm = () => {
       
       // Check if the status from API is valid
       if (userData.status === 'active' || userData.status === 'inactive' || userData.status === 'pending') {
-        status = userData.status as UserStatus;
+        status = userData.status;
       }
       
       form.reset({
@@ -166,20 +166,9 @@ const UserForm = () => {
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // Explicitly handle the status field
-            const statusValue = value as unknown; // First cast to unknown
-            
-            // Then perform type guard and cast to the specific enum type
-            if (
-              statusValue === 'active' || 
-              statusValue === 'inactive' || 
-              statusValue === 'pending'
-            ) {
-              // Use a type assertion that we know is safe after our check
-              acc[key as keyof UpdateUserData] = statusValue as UserStatus;
-            } else {
-              // Default case - use a safe value
-              acc[key as keyof UpdateUserData] = 'active' as UserStatus;
+            // We know this is a valid UserStatus now
+            if (USER_STATUSES.includes(value as any)) {
+              acc[key as keyof UpdateUserData] = value as UserStatus;
             }
           } else {
             acc[key as keyof UpdateUserData] = value;
@@ -196,13 +185,11 @@ const UserForm = () => {
 
   const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
 
-  // Function to handle status change with proper type handling
+  // Function to safely handle status changes
   const handleStatusChange = (value: string) => {
-    const isValidStatus = USER_STATUSES.includes(value as UserStatus);
-    if (isValidStatus) {
+    // Only set the value if it's one of our valid statuses
+    if (USER_STATUSES.includes(value as UserStatus)) {
       form.setValue('status', value as UserStatus);
-    } else {
-      form.setValue('status', 'active' as UserStatus);
     }
   };
 

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -127,6 +128,7 @@ const ClientProfileForm = () => {
   const { id } = useParams();
   const userId = id ? parseInt(id) : 0;
   const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [formInitialized, setFormInitialized] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
     basics: true,
     dietary: true,
@@ -138,12 +140,14 @@ const ClientProfileForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch user data to display name
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => userService.getUser(userId),
     enabled: !!userId,
   });
 
+  // Form setup with empty initial values
   const form = useForm<FormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -159,33 +163,36 @@ const ClientProfileForm = () => {
       recovery_needs: [],
       meal_preferences: [],
     },
+    mode: 'onChange',
   });
 
+  // Fetch client profile data
   const { data: profileData, isLoading: isProfileLoading } = useQuery({
     queryKey: ['client-profile', userId],
     queryFn: () => profileService.getClientProfile(userId),
     enabled: !!userId,
   });
 
+  // Initialize form with data
   useEffect(() => {
-    if (profileData) {
-      setIsUpdateMode(true);
-      
-      form.reset({
-        age: profileData.age,
-        gender: profileData.gender,
-        height: profileData.height,
-        current_weight: profileData.current_weight,
-        target_weight: profileData.target_weight,
-        activity_level: profileData.activity_level,
-        diet_type: profileData.diet_type,
-        health_conditions: profileData.health_conditions,
-        allergies: profileData.allergies,
-        recovery_needs: profileData.recovery_needs,
-        meal_preferences: profileData.meal_preferences,
-      });
-    } else {
-      if (userData) {
+    if (!formInitialized && !isProfileLoading) {
+      if (profileData) {
+        setIsUpdateMode(true);
+        form.reset({
+          age: profileData.age,
+          gender: profileData.gender,
+          height: profileData.height,
+          current_weight: profileData.current_weight,
+          target_weight: profileData.target_weight,
+          activity_level: profileData.activity_level,
+          diet_type: profileData.diet_type,
+          health_conditions: profileData.health_conditions,
+          allergies: profileData.allergies,
+          recovery_needs: profileData.recovery_needs,
+          meal_preferences: profileData.meal_preferences,
+        });
+      } else {
+        // Only for new profiles - initialize with reasonable defaults
         form.reset({
           age: 30,
           gender: 'male',
@@ -200,9 +207,11 @@ const ClientProfileForm = () => {
           meal_preferences: [],
         });
       }
+      setFormInitialized(true);
     }
-  }, [profileData, userData, form]);
+  }, [profileData, isProfileLoading, form, formInitialized]);
 
+  // Create or update profile mutation
   const createOrUpdateProfileMutation = useMutation({
     mutationFn: (data: CreateProfileData) => 
       profileService.createOrUpdateClientProfile(userId, data),
@@ -224,6 +233,7 @@ const ClientProfileForm = () => {
     },
   });
 
+  // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: UpdateProfileData) => 
       profileService.updateClientProfile(userId, data),
@@ -244,6 +254,18 @@ const ClientProfileForm = () => {
   });
 
   const onSubmit = (data: FormData) => {
+    // Check if user has modified the form (to avoid submitting default values)
+    const hasUserChangedForm = form.formState.isDirty || isUpdateMode;
+    
+    if (!hasUserChangedForm && !isUpdateMode) {
+      toast({
+        title: 'Warning',
+        description: 'Please update the profile data before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (isUpdateMode) {
       updateProfileMutation.mutate(data);
     } else {
@@ -270,7 +292,7 @@ const ClientProfileForm = () => {
     }));
   };
 
-  const isLoading = isProfileLoading || createOrUpdateProfileMutation.isPending || updateProfileMutation.isPending;
+  const isLoading = isProfileLoading || createOrUpdateProfileMutation.isPending || updateProfileMutation.isPending || !formInitialized;
 
   return (
     <>
@@ -306,7 +328,7 @@ const ClientProfileForm = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isProfileLoading ? (
+          {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
