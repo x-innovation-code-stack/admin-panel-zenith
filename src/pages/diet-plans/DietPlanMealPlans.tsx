@@ -1,17 +1,17 @@
 
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getDietPlanById } from '@/services/dietPlanService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Calendar, Utensils } from 'lucide-react';
-import { MealPlan, Meal } from '@/types/dietPlan';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowLeft, Clock, Calendar, ChevronRight, Utensils } from 'lucide-react';
+import { MealPlan } from '@/types/dietPlan';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 export default function DietPlanMealPlans() {
   const { id } = useParams();
+  const navigate = useNavigate();
   
   // Fetch diet plan details including meal plans
   const { data: dietPlan, isLoading } = useQuery({
@@ -34,69 +34,9 @@ export default function DietPlanMealPlans() {
     return day.charAt(0).toUpperCase() + day.slice(1);
   };
 
-  // Helper function to format the time
-  const formatTime = (timeString: string) => {
-    try {
-      return format(new Date(timeString), 'h:mm a');
-    } catch (error) {
-      return timeString;
-    }
-  };
-
-  const renderMealRows = (meals: Meal[]) => {
-    return meals
-      .sort((a, b) => new Date(a.time_of_day).getTime() - new Date(b.time_of_day).getTime())
-      .map((meal) => (
-        <Card key={meal.id} className="mb-4">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <div>
-                <Badge className="mb-2">{meal.meal_type_display}</Badge>
-                <CardTitle className="text-lg">{meal.title}</CardTitle>
-              </div>
-              <div className="flex items-center text-muted-foreground">
-                <Clock className="h-4 w-4 mr-1" />
-                {formatTime(meal.time_of_day)}
-              </div>
-            </div>
-            <CardDescription>{meal.description}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-sm mb-4">
-              <div className="text-center p-2 bg-muted rounded-md">
-                <div className="font-medium">Calories</div>
-                <div className="text-lg">{meal.calories}</div>
-              </div>
-              <div className="text-center p-2 bg-muted rounded-md">
-                <div className="font-medium">Protein</div>
-                <div className="text-lg">{meal.protein_grams}g</div>
-              </div>
-              <div className="text-center p-2 bg-muted rounded-md">
-                <div className="font-medium">Carbs</div>
-                <div className="text-lg">{meal.carbs_grams}g</div>
-              </div>
-            </div>
-            
-            {meal.recipes && meal.recipes.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Recipe: {meal.recipes[0].name}</h4>
-                <div className="mb-2">
-                  <h5 className="text-sm font-medium mb-1">Ingredients:</h5>
-                  <ul className="list-disc pl-5 text-sm">
-                    {meal.recipes[0].ingredients.map((ingredient, i) => (
-                      <li key={i}>{ingredient}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h5 className="text-sm font-medium mb-1">Instructions:</h5>
-                  <p className="text-sm">{meal.recipes[0].instructions}</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ));
+  // Navigate to meal plan detail page
+  const viewMealPlanDetails = (mealPlan: MealPlan) => {
+    navigate(`/diet-plans/${id}/meal-plans/${mealPlan.day_of_week}`, { state: { mealPlan, dietPlan } });
   };
 
   return (
@@ -113,7 +53,7 @@ export default function DietPlanMealPlans() {
         </h1>
       </div>
 
-      <Card className="mb-4">
+      <Card className="mb-4 animate-fade-in">
         <CardHeader>
           <CardTitle>Diet Plan Overview</CardTitle>
           <CardDescription>{dietPlan?.description}</CardDescription>
@@ -184,36 +124,48 @@ export default function DietPlanMealPlans() {
       </Card>
 
       {dietPlan?.meal_plans && dietPlan.meal_plans.length > 0 ? (
-        <div className="space-y-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {dietPlan.meal_plans
             .sort((a, b) => {
               const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
               return days.indexOf(a.day_of_week) - days.indexOf(b.day_of_week);
             })
-            .map((mealPlan: MealPlan) => (
-              <Card key={mealPlan.id} className="overflow-hidden">
+            .map((mealPlan: MealPlan, index) => (
+              <Card 
+                key={mealPlan.id} 
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.02] animate-fade-in"
+                style={{ animationDelay: `${index * 75}ms` }}
+                onClick={() => viewMealPlanDetails(mealPlan)}
+              >
                 <CardHeader className="bg-muted/50">
                   <div className="flex justify-between items-center">
-                    <CardTitle>{capitalizeDay(mealPlan.day_of_week)}</CardTitle>
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Calories:</span>
-                        <span>{mealPlan.total_calories}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Protein:</span>
-                        <span>{mealPlan.total_protein}g</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Carbs:</span>
-                        <span>{mealPlan.total_carbs}g</span>
-                      </div>
-                    </div>
+                    <CardTitle className="text-xl">{capitalizeDay(mealPlan.day_of_week)}</CardTitle>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6">
-                  {renderMealRows(mealPlan.meals || [])}
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-3 gap-2 text-sm mb-4">
+                    <div className="text-center p-2 bg-muted/50 rounded-md">
+                      <div className="font-medium">Calories</div>
+                      <div className="text-lg">{mealPlan.total_calories}</div>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded-md">
+                      <div className="font-medium">Protein</div>
+                      <div className="text-lg">{mealPlan.total_protein}g</div>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded-md">
+                      <div className="font-medium">Carbs</div>
+                      <div className="text-lg">{mealPlan.total_carbs}g</div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    <p>{mealPlan.meals?.length || 0} meals planned</p>
+                  </div>
                 </CardContent>
+                <CardFooter className="bg-muted/20 border-t text-sm p-3 flex justify-between">
+                  <span>View Details</span>
+                  <ChevronRight className="h-4 w-4" />
+                </CardFooter>
               </Card>
             ))}
         </div>

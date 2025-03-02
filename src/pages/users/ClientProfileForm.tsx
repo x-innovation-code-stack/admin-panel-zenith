@@ -1,79 +1,68 @@
-import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getClientProfile, updateClientProfile } from '@/services/userService';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft } from 'lucide-react';
-
-const formSchema = z.object({
-  bio: z.string().optional(),
-  address: z.string().optional(),
-  weight_kg: z.number().optional(),
-  height_cm: z.number().optional(),
-  goal: z.string().optional(),
-});
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { getUserProfile, updateUserProfile } from '@/services/profileService';
+import { useState } from 'react';
 
 export default function ClientProfileForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      bio: "",
-      address: "",
-      weight_kg: undefined,
-      height_cm: undefined,
-      goal: "",
-    },
-  });
+  const { toast } = useToast();
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['client-profile', id],
-    queryFn: () => getClientProfile(Number(id)),
-    onSettled: (data, error) => {
-      if (data) {
-        // Set form values from the API response
-        form.setValue('bio', data.bio || "");
-        form.setValue('address', data.address || "");
-        form.setValue('weight_kg', data.weight_kg || undefined);
-        form.setValue('height_cm', data.height_cm || undefined);
-        form.setValue('goal', data.goal || "");
-      }
+    queryKey: ['user-profile', id],
+    queryFn: () => getUserProfile(Number(id)),
+    enabled: !!id,
+    onSuccess: (data) => {
+      setFormData({
+        bio: data?.bio || '',
+        address: data?.address || '',
+        weight_kg: data?.weight_kg || undefined,
+        height_cm: data?.height_cm || undefined,
+        goal: data?.goal || '',
+      });
     }
   });
 
-  const { mutate: updateProfile, isSubmitting } = useMutation({
-    mutationFn: (data: z.infer<typeof formSchema>) => updateClientProfile(Number(id), data),
+  const [formData, setFormData] = useState({
+    bio: '',
+    address: '',
+    weight_kg: undefined,
+    height_cm: undefined,
+    goal: '',
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => updateUserProfile(Number(id), data),
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Client profile updated successfully.",
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['client-profile', id] });
-      navigate(`/users/${id}`);
+      queryClient.invalidateQueries({ queryKey: ['user-profile', id] });
+      navigate('/users');
     },
     onError: (error: any) => {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to update client profile.",
+        description: error.message || "Failed to update profile.",
+        variant: "destructive",
       });
-    },
+    }
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    updateProfile(values);
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    mutation.mutate(formData);
+  };
+
+  const isSubmitting = mutation.isPending;
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -81,113 +70,72 @@ export default function ClientProfileForm() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center gap-4 mb-4">
-        <Button variant="outline" size="sm" asChild>
-          <Link to={`/users/${id}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to User
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Edit Client Profile</h1>
-      </div>
       <Card>
         <CardHeader>
-          <CardTitle>Client Profile</CardTitle>
-          <CardDescription>Update client profile information.</CardDescription>
+          <CardTitle>Edit Client Profile</CardTitle>
+          <CardDescription>Update your client's profile information here.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Tell us a little bit about the client"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Write a short bio about the client.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                placeholder="Tell us a little bit about yourself"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Client address" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the client's address.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                type="text"
+                id="address"
+                placeholder="Your address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
-              <FormField
-                control={form.control}
-                name="weight_kg"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight (kg)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Client weight in kg" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the client's weight in kilograms.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="weight_kg">Weight (kg)</Label>
+              <Input
+                type="number"
+                id="weight_kg"
+                placeholder="Your weight in kg"
+                value={formData.weight_kg}
+                onChange={(e) => setFormData({ ...formData, weight_kg: Number(e.target.value) })}
               />
-              <FormField
-                control={form.control}
-                name="height_cm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Height (cm)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Client height in cm" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the client's height in centimeters.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="height_cm">Height (cm)</Label>
+              <Input
+                type="number"
+                id="height_cm"
+                placeholder="Your height in cm"
+                value={formData.height_cm}
+                onChange={(e) => setFormData({ ...formData, height_cm: Number(e.target.value) })}
               />
-              <FormField
-                control={form.control}
-                name="goal"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Goal</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Client fitness goal" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the client's fitness goal.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="goal">Goal</Label>
+              <Input
+                type="text"
+                id="goal"
+                placeholder="Your fitness goal"
+                value={formData.goal}
+                onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
               />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Profile"}
-              </Button>
-            </form>
-          </Form>
+            </div>
+            <Button disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Updating..." : "Update Profile"}
+            </Button>
+          </form>
         </CardContent>
+        <CardFooter>
+          <CardDescription>
+            Make sure to save your changes before leaving.
+          </CardDescription>
+        </CardFooter>
       </Card>
     </div>
   );
