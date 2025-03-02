@@ -41,34 +41,34 @@ export default function DietPlanMealPlans() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" asChild>
+      <div className="flex items-center gap-4 animate-fade-in">
+        <Button variant="outline" size="sm" asChild className="shadow-soft hover:shadow-md transition-all duration-300">
           <Link to="/diet-plans">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Diet Plans
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight text-gradient">
           Meal Plans for {dietPlan?.title}
         </h1>
       </div>
 
-      <Card className="mb-4 animate-fade-in">
-        <CardHeader>
-          <CardTitle>Diet Plan Overview</CardTitle>
+      <Card className="mb-4 animate-fade-in shadow-medium border-gradient overflow-hidden bg-gradient-to-r from-white to-accent/40">
+        <CardHeader className="bg-gradient-to-r from-[#F2FCE2]/50 to-[#E5DEFF]/50">
+          <CardTitle className="text-primary">{dietPlan?.title}</CardTitle>
           <CardDescription>{dietPlan?.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
+            <div className="animate-fade-in" style={{ animationDelay: "50ms" }}>
               <p className="text-sm text-muted-foreground mb-1">Client</p>
               <p className="font-medium">{dietPlan?.client?.name}</p>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
               <p className="text-sm text-muted-foreground mb-1">Created By</p>
               <p className="font-medium">{dietPlan?.creator?.name}</p>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
               <p className="text-sm text-muted-foreground mb-1">Duration</p>
               <p className="font-medium">
                 {dietPlan?.start_date && dietPlan?.end_date ? (
@@ -80,7 +80,7 @@ export default function DietPlanMealPlans() {
                 )}
               </p>
             </div>
-            <div>
+            <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
               <p className="text-sm text-muted-foreground mb-1">Status</p>
               <Badge variant={dietPlan?.status === 'active' ? 'default' : dietPlan?.status === 'completed' ? 'success' : 'secondary'}>
                 {dietPlan?.status}
@@ -89,30 +89,30 @@ export default function DietPlanMealPlans() {
           </div>
           
           <div className="mt-6 grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
+            <Card className="animate-fade-in hover:scale-105 transition-transform duration-300" style={{ animationDelay: "250ms" }}>
+              <CardContent className="pt-6 bg-gradient-to-br from-white to-[#FEF7CD]/30">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Daily Calories</p>
-                  <p className="text-2xl font-bold">{dietPlan?.daily_calories}</p>
+                  <p className="text-2xl font-bold text-primary">{dietPlan?.daily_calories}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
+            <Card className="animate-fade-in hover:scale-105 transition-transform duration-300" style={{ animationDelay: "300ms" }}>
+              <CardContent className="pt-6 bg-gradient-to-br from-white to-[#E5DEFF]/30">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Protein</p>
-                  <p className="text-2xl font-bold">{dietPlan?.protein_grams}g</p>
+                  <p className="text-2xl font-bold text-secondary">{dietPlan?.protein_grams}g</p>
                   {dietPlan?.macro_percentages && (
                     <p className="text-sm text-muted-foreground">{dietPlan?.macro_percentages.protein}%</p>
                   )}
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
+            <Card className="animate-fade-in hover:scale-105 transition-transform duration-300" style={{ animationDelay: "350ms" }}>
+              <CardContent className="pt-6 bg-gradient-to-br from-white to-[#FFDEE2]/30">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Carbs</p>
-                  <p className="text-2xl font-bold">{dietPlan?.carbs_grams}g</p>
+                  <p className="text-2xl font-bold text-destructive">{dietPlan?.carbs_grams}g</p>
                   {dietPlan?.macro_percentages && (
                     <p className="text-sm text-muted-foreground">{dietPlan?.macro_percentages.carbs}%</p>
                   )}
@@ -130,50 +130,64 @@ export default function DietPlanMealPlans() {
               const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
               return days.indexOf(a.day_of_week) - days.indexOf(b.day_of_week);
             })
-            .map((mealPlan: MealPlan, index) => (
-              <Card 
-                key={mealPlan.id} 
-                className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.02] animate-fade-in"
-                style={{ animationDelay: `${index * 75}ms` }}
-                onClick={() => viewMealPlanDetails(mealPlan)}
-              >
-                <CardHeader className="bg-muted/50">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl">{capitalizeDay(mealPlan.day_of_week)}</CardTitle>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-3 gap-2 text-sm mb-4">
-                    <div className="text-center p-2 bg-muted/50 rounded-md">
-                      <div className="font-medium">Calories</div>
-                      <div className="text-lg">{mealPlan.total_calories}</div>
+            .map((mealPlan: MealPlan, index) => {
+              // Choose a background color based on the day of the week
+              const dayColors = {
+                monday: 'from-[#F2FCE2] to-[#E5DEFF]',
+                tuesday: 'from-[#E5DEFF] to-[#FFDEE2]',
+                wednesday: 'from-[#FFDEE2] to-[#FEF7CD]',
+                thursday: 'from-[#FEF7CD] to-[#F2FCE2]',
+                friday: 'from-[#E5DEFF] to-[#F2FCE2]',
+                saturday: 'from-[#FFDEE2] to-[#E5DEFF]',
+                sunday: 'from-[#FEF7CD] to-[#FFDEE2]',
+              };
+              const bgGradient = dayColors[mealPlan.day_of_week as keyof typeof dayColors] || 'from-white to-accent/40';
+              
+              return (
+                <Card 
+                  key={mealPlan.id} 
+                  className={`overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.03] animate-fade-in shadow-soft bg-gradient-to-br ${bgGradient}`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => viewMealPlanDetails(mealPlan)}
+                >
+                  <CardHeader className="relative">
+                    <div className="flex justify-between items-center relative z-10">
+                      <CardTitle className="text-xl font-bold">{capitalizeDay(mealPlan.day_of_week)}</CardTitle>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground animate-pulse" />
                     </div>
-                    <div className="text-center p-2 bg-muted/50 rounded-md">
-                      <div className="font-medium">Protein</div>
-                      <div className="text-lg">{mealPlan.total_protein}g</div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="grid grid-cols-3 gap-2 text-sm mb-4">
+                      <div className="text-center p-2 bg-white/60 backdrop-blur-sm rounded-md shadow-soft animate-scale-in" style={{ animationDelay: `${index * 100 + 100}ms` }}>
+                        <div className="font-medium text-primary">Calories</div>
+                        <div className="text-lg font-bold">{mealPlan.total_calories}</div>
+                      </div>
+                      <div className="text-center p-2 bg-white/60 backdrop-blur-sm rounded-md shadow-soft animate-scale-in" style={{ animationDelay: `${index * 100 + 150}ms` }}>
+                        <div className="font-medium text-secondary">Protein</div>
+                        <div className="text-lg font-bold">{mealPlan.total_protein}g</div>
+                      </div>
+                      <div className="text-center p-2 bg-white/60 backdrop-blur-sm rounded-md shadow-soft animate-scale-in" style={{ animationDelay: `${index * 100 + 200}ms` }}>
+                        <div className="font-medium text-destructive">Carbs</div>
+                        <div className="text-lg font-bold">{mealPlan.total_carbs}g</div>
+                      </div>
                     </div>
-                    <div className="text-center p-2 bg-muted/50 rounded-md">
-                      <div className="font-medium">Carbs</div>
-                      <div className="text-lg">{mealPlan.total_carbs}g</div>
+                    <div className="text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: `${index * 100 + 250}ms` }}>
+                      <p>{mealPlan.meals?.length || 0} meals planned</p>
                     </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    <p>{mealPlan.meals?.length || 0} meals planned</p>
-                  </div>
-                </CardContent>
-                <CardFooter className="bg-muted/20 border-t text-sm p-3 flex justify-between">
-                  <span>View Details</span>
-                  <ChevronRight className="h-4 w-4" />
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardContent>
+                  <CardFooter className="bg-white/30 backdrop-blur-sm border-t text-sm p-3 flex justify-between animate-fade-in" style={{ animationDelay: `${index * 100 + 300}ms` }}>
+                    <span className="font-medium">View Details</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </CardFooter>
+                </Card>
+              );
+            })}
         </div>
       ) : (
-        <Card>
+        <Card className="animate-fade-in shadow-medium bg-gradient-to-r from-white to-accent/40">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Utensils className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-xl font-medium mb-2">No Meal Plans Found</p>
+            <Utensils className="h-12 w-12 text-muted-foreground mb-4 animate-float" />
+            <p className="text-xl font-medium mb-2 text-gradient">No Meal Plans Found</p>
             <p className="text-muted-foreground text-center max-w-md">
               This diet plan doesn't have any meal plans associated with it yet.
             </p>

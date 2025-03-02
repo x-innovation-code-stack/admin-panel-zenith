@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -325,8 +326,8 @@ export default function DietPlanForm() {
               </div>
             </div>
             <CardFooter>
-              <Button type="submit" disabled={createMutation.isLoading || updateMutation.isLoading}>
-                {id ? (updateMutation.isLoading ? 'Updating...' : 'Update Diet Plan') : (createMutation.isLoading ? 'Creating...' : 'Create Diet Plan')}
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                {id ? (updateMutation.isPending ? 'Updating...' : 'Update Diet Plan') : (createMutation.isPending ? 'Creating...' : 'Create Diet Plan')}
               </Button>
             </CardFooter>
           </form>
