@@ -15,6 +15,10 @@ import ClientProfileForm from "./pages/users/ClientProfileForm";
 import GymList from "./pages/gyms/GymList";
 import GymForm from "./pages/gyms/GymForm";
 import GymUserList from "./pages/gyms/GymUserList";
+import DietPlanList from "./pages/diet-plans/DietPlanList";
+import DietPlanForm from "./pages/diet-plans/DietPlanForm";
+import DietPlanMealPlans from "./pages/diet-plans/DietPlanMealPlans";
+import DuplicateDietPlan from "./pages/diet-plans/DuplicateDietPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -54,6 +58,13 @@ const App = () => (
               <Route path="/gyms/new" element={<GymForm />} />
               <Route path="/gyms/:id" element={<GymForm />} />
               <Route path="/gyms/:id/users" element={<GymUserList />} />
+
+              {/* Diet Plan Routes */}
+              <Route path="/diet-plans" element={<DietPlanList />} />
+              <Route path="/diet-plans/new" element={<DietPlanForm />} />
+              <Route path="/diet-plans/:id" element={<DietPlanForm />} />
+              <Route path="/diet-plans/:id/meal-plans" element={<DietPlanMealPlans />} />
+              <Route path="/diet-plans/:id/duplicate" element={<DuplicateDietPlan />} />
             </Route>
 
             {/* Catch all */}

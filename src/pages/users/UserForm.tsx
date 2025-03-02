@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -33,7 +32,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
-// Define as const array to get proper type inference
 const USER_STATUSES = ['active', 'inactive', 'pending'] as const;
 type UserStatus = typeof USER_STATUSES[number];
 
@@ -63,7 +61,6 @@ const UserForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Form
   const [schema, setSchema] = useState(isEditMode ? updateUserSchema : createUserSchema);
 
   const form = useForm<CreateUserFormData | UpdateUserFormData>({
@@ -79,20 +76,17 @@ const UserForm = () => {
     },
   });
 
-  // Fetch roles
   const { data: roles } = useQuery({
     queryKey: ['roles'],
     queryFn: () => userService.getRoles(),
   });
 
-  // Fetch user data if in edit mode
   const { data: userData, isLoading: isUserLoading } = useQuery({
     queryKey: ['user', id],
     queryFn: () => userService.getUser(Number(id)),
     enabled: isEditMode,
   });
 
-  // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: (data: CreateUserData) => userService.createUser(data),
     onSuccess: () => {
@@ -112,7 +106,6 @@ const UserForm = () => {
     },
   });
 
-  // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateUserData }) => 
       userService.updateUser(id, data),
@@ -134,13 +127,10 @@ const UserForm = () => {
     },
   });
 
-  // Set form values when user data is loaded
   useEffect(() => {
     if (isEditMode && userData) {
-      // Type assertion for status with type guard
       let status: UserStatus = 'active';
       
-      // Check if the status from API is valid
       if (userData.status === 'active' || userData.status === 'inactive' || userData.status === 'pending') {
         status = userData.status;
       }
@@ -151,7 +141,7 @@ const UserForm = () => {
         password: '',
         phone: userData.phone || '',
         whatsapp_phone: userData.whatsapp_phone || '',
-        status, // Just use the validated status
+        status,
         role: userData.role,
       });
     }
@@ -159,14 +149,11 @@ const UserForm = () => {
 
   const onSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
     if (isEditMode && id) {
-      // Create a copy to ensure type safety
       const submissionData = { ...data };
       
-      // Filter out empty fields for the update
       const updateData = Object.entries(submissionData).reduce((acc, [key, value]) => {
         if (value !== '') {
           if (key === 'status') {
-            // Safe check for status
             if (value === 'active' || value === 'inactive' || value === 'pending') {
               acc[key as keyof UpdateUserData] = value as UserStatus;
             } else {
@@ -327,27 +314,19 @@ const UserForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select 
-                          onValueChange={(value) => {
-                            // Only set if it's a valid status
-                            if (USER_STATUSES.includes(value as UserStatus)) {
-                              field.onChange(value as UserStatus);
-                            }
-                          }}
-                          defaultValue={field.value}
+                        <Select
+                          onValueChange={(value: "active" | "inactive" | "pending") => field.onChange(value)}
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="bg-white/70">
+                            <SelectTrigger>
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {USER_STATUSES.map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
