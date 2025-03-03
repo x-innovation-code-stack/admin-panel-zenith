@@ -5,46 +5,46 @@
 
 @layer base {
   :root {
-    /* Modern theme with hot pink, red and green */
-    --background: 0 0% 98%;
-    --foreground: 320 10% 15%;
+    /* Modern theme with clean look */
+    --background: 220 20% 97%;
+    --foreground: 220 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 320 10% 15%;
+    --card-foreground: 220 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 320 10% 15%;
+    --popover-foreground: 220 10% 15%;
 
-    --primary: 335 90% 50%; /* Hot pink */
-    --primary-foreground: 0 0% 98%;
+    --primary: 230 65% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 76% 36%; /* Green */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 15% 94%;
+    --secondary-foreground: 220 10% 30%;
 
-    --muted: 338 20% 95%;
-    --muted-foreground: 320 10% 45%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 142 70% 95%;
-    --accent-foreground: 142 76% 26%;
+    --accent: 240 15% 94%;
+    --accent-foreground: 240 30% 40%;
 
-    --destructive: 0 84% 60%; /* Red */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 320 10% 90%;
-    --input: 320 10% 90%;
-    --ring: 335 90% 50%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 230 65% 60%;
 
     --radius: 0.75rem;
 
-    /* Sidebar specific colors - hot pink/green theme */
-    --sidebar-background: 335 90% 50%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 335 90% 50%;
-    --sidebar-accent: 142 76% 36%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 335 90% 60%;
-    --sidebar-ring: 0 0% 100%;
+    /* Sidebar specific colors - clean modern theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 10% 40%;
+    --sidebar-primary: 230 65% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 94%;
+    --sidebar-accent-foreground: 230 65% 60%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 230 65% 60%;
   }
 }
 
@@ -55,26 +55,39 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: linear-gradient(to bottom right, rgba(255, 240, 250, 0.5), rgba(240, 255, 240, 0.7));
+    background-image: linear-gradient(to bottom right, rgba(246, 248, 252, 0.8), rgba(248, 249, 253, 0.9));
     background-attachment: fixed;
   }
   
   .glass {
-    @apply bg-white/60 backdrop-blur-md border border-white/30 rounded-xl shadow-sm;
+    @apply bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl shadow-sm;
   }
   
   .card-transition {
-    @apply transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-1;
   }
 
   /* Add gradient button effect */
   .btn-gradient {
-    @apply bg-gradient-to-r from-[#D946EF] to-[#ea384c] text-white hover:from-[#ea384c] hover:to-[#D946EF];
+    @apply bg-gradient-to-r from-primary to-primary/80 text-white hover:from-primary/90 hover:to-primary;
   }
 
   /* Add subtle card gradient */
   .card-gradient {
-    @apply bg-gradient-to-br from-white to-accent/40;
+    @apply bg-gradient-to-br from-white to-accent/20;
+  }
+  
+  /* Modern sidebar styling */
+  .sidebar-item {
+    @apply flex items-center rounded-md py-2 px-3 text-sm transition-colors gap-3 font-medium;
+  }
+
+  .sidebar-item-active {
+    @apply bg-secondary text-primary hover:bg-secondary/80;
+  }
+
+  .sidebar-item-inactive {
+    @apply text-sidebar-foreground hover:bg-secondary/50 hover:text-primary;
   }
 }
 
@@ -84,11 +97,11 @@
   }
   
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-destructive bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
   }
   
   .border-gradient {
-    border-image: linear-gradient(to right, #D946EF, #ea384c) 1;
+    border-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary)/0.7)) 1;
   }
 
   /* Add subtle shadow effects */
@@ -99,8 +112,12 @@
   .shadow-medium {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
-  
-  .green-accent {
-    @apply bg-gradient-to-r from-secondary to-secondary/80 text-white;
-  }
+}
+
+/* Clean up App.css conflicting styles */
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
