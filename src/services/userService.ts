@@ -1,68 +1,47 @@
 
 import axios from '../lib/axios';
-import { User } from '../types/auth';
 
-export interface UserFilters {
-  role?: string;
-  status?: string;
-  search?: string;
-  page?: number;
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  whatsapp_phone?: string;
+  status: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface UserListResponse {
-  data: User[];
-  meta: {
-    current_page: number;
-    last_page: number;
-    total: number;
-    per_page: number;
-  };
-}
-
-export interface CreateUserData {
+export interface UserFormData {
   name: string;
   email: string;
   password?: string;
   phone?: string;
   whatsapp_phone?: string;
-  status: 'active' | 'inactive' | 'pending';
-  role: string;
+  status: 'active' | 'inactive';
 }
 
-export interface UpdateUserData extends Omit<CreateUserData, 'email' | 'password'> {
-  email?: string;
-  password?: string;
-}
-
-const userService = {
-  getUsers: async (filters: UserFilters = {}): Promise<UserListResponse> => {
-    const response = await axios.get('/users', { params: filters });
-    return response.data;
-  },
-
-  getUser: async (id: number): Promise<User> => {
-    const response = await axios.get(`/users/${id}`);
-    return response.data;
-  },
-
-  createUser: async (data: CreateUserData): Promise<User> => {
-    const response = await axios.post('/users', data);
-    return response.data;
-  },
-
-  updateUser: async (id: number, data: UpdateUserData): Promise<User> => {
-    const response = await axios.put(`/users/${id}`, data);
-    return response.data;
-  },
-
-  deleteUser: async (id: number): Promise<void> => {
-    await axios.delete(`/users/${id}`);
-  },
-
-  getRoles: async (): Promise<string[]> => {
-    const response = await axios.get('/roles');
-    return response.data;
-  }
+export const getUsers = async () => {
+  const response = await axios.get<User[]>('/users');
+  return response.data;
 };
 
-export default userService;
+export const getUserById = async (id: number) => {
+  const response = await axios.get<User>(`/users/${id}`);
+  return response.data;
+};
+
+export const createUser = async (data: UserFormData) => {
+  const response = await axios.post<User>('/users', data);
+  return response.data;
+};
+
+export const updateUser = async (id: number, data: Partial<UserFormData>) => {
+  const response = await axios.put<User>(`/users/${id}`, data);
+  return response.data;
+};
+
+export const deleteUser = async (id: number) => {
+  const response = await axios.delete<{ success: boolean }>(`/users/${id}`);
+  return response.data;
+};

@@ -1,141 +1,186 @@
+
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { getUserProfile, updateUserProfile } from '@/services/profileService';
-import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getUserProfile, updateUserProfile, UserProfile, UserProfileFormData } from '@/services/profileService';
 
 export default function ClientProfileForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const [isNew, setIsNew] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  // Define the form
+  const form = useForm<UserProfileFormData>({
+    defaultValues: {
+      bio: '',
+      height: undefined,
+      weight: undefined,
+      birth_date: '',
+      goals: [],
+      allergies: [],
+      medications: [],
+    },
+  });
+
+  // Fetch user profile data
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ['user-profile', id],
     queryFn: () => getUserProfile(Number(id)),
-    enabled: !!id,
-    onSuccess: (data) => {
-      setFormData({
-        bio: data?.bio || '',
-        address: data?.address || '',
-        weight_kg: data?.weight_kg || undefined,
-        height_cm: data?.height_cm || undefined,
-        goal: data?.goal || '',
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Set form values when profile data is loaded
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        bio: profile.bio || '',
+        height: profile.height,
+        weight: profile.weight,
+        birth_date: profile.birth_date ? new Date(profile.birth_date).toISOString().split('T')[0] : '',
+        goals: profile.goals || [],
+        allergies: profile.allergies || [],
+        medications: profile.medications || [],
       });
+    } else if (error) {
+      // If profile doesn't exist, we're creating a new one
+      setIsNew(true);
     }
-  });
+  }, [profile, error, form]);
 
-  const [formData, setFormData] = useState({
-    bio: '',
-    address: '',
-    weight_kg: undefined,
-    height_cm: undefined,
-    goal: '',
-  });
-
+  // Handle form submission
   const mutation = useMutation({
-    mutationFn: (data: any) => updateUserProfile(Number(id), data),
+    mutationFn: (data: UserProfileFormData) => updateUserProfile(Number(id), data),
     onSuccess: () => {
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-      });
       queryClient.invalidateQueries({ queryKey: ['user-profile', id] });
-      navigate('/users');
+      toast.success(isNew ? 'Profile created successfully' : 'Profile updated successfully');
+      navigate(`/users`);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile.",
-        variant: "destructive",
-      });
-    }
+      toast.error(error.response?.data?.message || 'An error occurred');
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    mutation.mutate(formData);
+  const onSubmit = (data: UserProfileFormData) => {
+    mutation.mutate(data);
   };
 
-  const isSubmitting = mutation.isPending;
-
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <Card>
+    <div className="container mx-auto py-10">
+      <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle>Edit Client Profile</CardTitle>
-          <CardDescription>Update your client's profile information here.</CardDescription>
+          <CardTitle>{isNew ? 'Create Client Profile' : 'Edit Client Profile'}</CardTitle>
+          <CardDescription>
+            {isNew 
+              ? 'Create a new profile for this client with their health information and goals.' 
+              : 'Update the client profile with their latest health information and goals.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us a little bit about yourself"
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Client biography and background information" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Include any relevant background information about the client.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                type="text"
-                id="address"
-                placeholder="Your address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="height"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Height (cm)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Height in centimeters" 
+                          {...field} 
+                          value={field.value || ''} 
+                          onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight (kg)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Weight in kilograms" 
+                          {...field} 
+                          value={field.value || ''} 
+                          onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="birth_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Birth Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="weight_kg">Weight (kg)</Label>
-              <Input
-                type="number"
-                id="weight_kg"
-                placeholder="Your weight in kg"
-                value={formData.weight_kg}
-                onChange={(e) => setFormData({ ...formData, weight_kg: Number(e.target.value) })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="height_cm">Height (cm)</Label>
-              <Input
-                type="number"
-                id="height_cm"
-                placeholder="Your height in cm"
-                value={formData.height_cm}
-                onChange={(e) => setFormData({ ...formData, height_cm: Number(e.target.value) })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="goal">Goal</Label>
-              <Input
-                type="text"
-                id="goal"
-                placeholder="Your fitness goal"
-                value={formData.goal}
-                onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
-              />
-            </div>
-            <Button disabled={isSubmitting} type="submit">
-              {isSubmitting ? "Updating..." : "Update Profile"}
-            </Button>
-          </form>
+
+              <CardFooter className="flex justify-end gap-2 px-0">
+                <Button type="button" variant="outline" onClick={() => navigate('/users')}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={mutation.isPending}>
+                  {mutation.isPending ? 'Saving...' : isNew ? 'Create Profile' : 'Update Profile'}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
         </CardContent>
-        <CardFooter>
-          <CardDescription>
-            Make sure to save your changes before leaving.
-          </CardDescription>
-        </CardFooter>
       </Card>
     </div>
   );

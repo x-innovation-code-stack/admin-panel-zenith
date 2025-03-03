@@ -4,10 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { getDietPlanById } from '@/services/dietPlanService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, Calendar, ChevronRight, Utensils } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronRight, Utensils, Trash2 } from 'lucide-react';
 import { MealPlan } from '@/types/dietPlan';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import CreateMealPlanDialog from '@/components/diet-plans/CreateMealPlanDialog';
+import DeleteMealPlanDialog from '@/components/diet-plans/DeleteMealPlanDialog';
 
 export default function DietPlanMealPlans() {
   const { id } = useParams();
@@ -41,16 +43,19 @@ export default function DietPlanMealPlans() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-4 animate-fade-in">
-        <Button variant="outline" size="sm" asChild className="shadow-soft hover:shadow-md transition-all duration-300">
-          <Link to="/diet-plans">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Diet Plans
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight text-gradient">
-          Meal Plans for {dietPlan?.title}
-        </h1>
+      <div className="flex items-center justify-between gap-4 animate-fade-in">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" asChild className="shadow-soft hover:shadow-md transition-all duration-300">
+            <Link to="/diet-plans">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Diet Plans
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight text-gradient">
+            Meal Plans for {dietPlan?.title}
+          </h1>
+        </div>
+        <CreateMealPlanDialog dietPlanId={Number(id)} />
       </div>
 
       <Card className="mb-4 animate-fade-in shadow-medium border-gradient overflow-hidden bg-gradient-to-r from-white to-accent/40">
@@ -146,17 +151,25 @@ export default function DietPlanMealPlans() {
               return (
                 <Card 
                   key={mealPlan.id} 
-                  className={`overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.03] animate-fade-in shadow-soft bg-gradient-to-br ${bgGradient}`}
+                  className={`overflow-hidden hover:shadow-md transition-all duration-300 hover:scale-[1.03] animate-fade-in shadow-soft bg-gradient-to-br ${bgGradient}`}
                   style={{ animationDelay: `${index * 100}ms` }}
-                  onClick={() => viewMealPlanDetails(mealPlan)}
                 >
                   <CardHeader className="relative">
                     <div className="flex justify-between items-center relative z-10">
                       <CardTitle className="text-xl font-bold">{capitalizeDay(mealPlan.day_of_week)}</CardTitle>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground animate-pulse" />
+                      <div className="flex items-center space-x-2">
+                        <DeleteMealPlanDialog 
+                          dietPlanId={Number(id)} 
+                          mealPlanId={mealPlan.id} 
+                          dayOfWeek={mealPlan.day_of_week} 
+                        />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewMealPlanDetails(mealPlan)}>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-4 cursor-pointer" onClick={() => viewMealPlanDetails(mealPlan)}>
                     <div className="grid grid-cols-3 gap-2 text-sm mb-4">
                       <div className="text-center p-2 bg-white/60 backdrop-blur-sm rounded-md shadow-soft animate-scale-in" style={{ animationDelay: `${index * 100 + 100}ms` }}>
                         <div className="font-medium text-primary">Calories</div>
@@ -175,7 +188,7 @@ export default function DietPlanMealPlans() {
                       <p>{mealPlan.meals?.length || 0} meals planned</p>
                     </div>
                   </CardContent>
-                  <CardFooter className="bg-white/30 backdrop-blur-sm border-t text-sm p-3 flex justify-between animate-fade-in" style={{ animationDelay: `${index * 100 + 300}ms` }}>
+                  <CardFooter className="bg-white/30 backdrop-blur-sm border-t text-sm p-3 flex justify-between animate-fade-in cursor-pointer" onClick={() => viewMealPlanDetails(mealPlan)} style={{ animationDelay: `${index * 100 + 300}ms` }}>
                     <span className="font-medium">View Details</span>
                     <ChevronRight className="h-4 w-4" />
                   </CardFooter>
@@ -188,9 +201,10 @@ export default function DietPlanMealPlans() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Utensils className="h-12 w-12 text-muted-foreground mb-4 animate-float" />
             <p className="text-xl font-medium mb-2 text-gradient">No Meal Plans Found</p>
-            <p className="text-muted-foreground text-center max-w-md">
+            <p className="text-muted-foreground text-center max-w-md mb-6">
               This diet plan doesn't have any meal plans associated with it yet.
             </p>
+            <CreateMealPlanDialog dietPlanId={Number(id)} />
           </CardContent>
         </Card>
       )}
