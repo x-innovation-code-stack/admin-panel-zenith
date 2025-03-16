@@ -1,31 +1,6 @@
 
 import axios from '../lib/axios';
-import { ClientProfile, CreateProfileData, UpdateProfileData } from '@/types/profile';
-
-export const getUserProfile = async (userId: number) => {
-  const response = await axios.get<UserProfile>(`/users/${userId}/profile`);
-  return response.data;
-};
-
-export const updateUserProfile = async (userId: number, data: UserProfileFormData) => {
-  const response = await axios.put<UserProfile>(`/users/${userId}/profile`, data);
-  return response.data;
-};
-
-export const getClientProfile = async (userId: number) => {
-  const response = await axios.get<ClientProfile>(`/users/${userId}/client-profile`);
-  return response.data;
-};
-
-export const createOrUpdateClientProfile = async (userId: number, data: CreateProfileData) => {
-  const response = await axios.post<ClientProfile>(`/users/${userId}/client-profile`, data);
-  return response.data;
-};
-
-export const updateClientProfile = async (userId: number, data: UpdateProfileData) => {
-  const response = await axios.put<ClientProfile>(`/users/${userId}/client-profile`, data);
-  return response.data;
-};
+import { ClientProfile, CreateProfileData, UpdateProfileData } from '../types/profile';
 
 export interface UserProfile {
   id: number;
@@ -50,3 +25,32 @@ export interface UserProfileFormData {
   allergies?: string[];
   medications?: string[];
 }
+
+const profileService = {
+  getUserProfile: async (userId: number): Promise<UserProfile> => {
+    const response = await axios.get<UserProfile>(`/users/${userId}/profile`);
+    return response.data;
+  },
+
+  updateUserProfile: async (userId: number, data: UserProfileFormData): Promise<UserProfile> => {
+    const response = await axios.put<UserProfile>(`/users/${userId}/profile`, data);
+    return response.data;
+  },
+
+  getClientProfile: async (userId: number): Promise<ClientProfile> => {
+    const response = await axios.get<ClientProfile>(`/users/${userId}/client-profile`);
+    return response.data;
+  },
+
+  createOrUpdateClientProfile: async (userId: number, data: CreateProfileData): Promise<ClientProfile> => {
+    const response = await axios.post<ClientProfile>(`/users/${userId}/client-profile`, data);
+    return response.data;
+  },
+
+  updateClientProfile: async (userId: number, data: UpdateProfileData): Promise<ClientProfile> => {
+    const response = await axios.put<ClientProfile>(`/users/${userId}/client-profile`, data);
+    return response.data;
+  }
+};
+
+export default profileService;
