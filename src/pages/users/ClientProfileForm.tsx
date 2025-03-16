@@ -1,17 +1,24 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import profileService from "@/services/profileService";
-import userService from "@/services/userService";
+import { getClientProfile, createOrUpdateClientProfile, updateClientProfile } from "@/services/profileService";
+import { getUserById } from "@/services/userService";
 import {
   CreateProfileData,
   UpdateProfileData,
   ActivityLevel,
   DietType,
   Gender,
+  StressSleep,
+  MealTiming,
+  ExerciseRoutine,
+  BodyType,
+  WaterIntake,
+  WeightGoal
 } from "@/types/profile";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -53,7 +60,6 @@ import {
   Save,
   User,
 } from "lucide-react";
-import { profile } from "console";
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: "male", label: "Male" },
@@ -103,6 +109,58 @@ const DIET_TYPES: { value: DietType; label: string }[] = [
   { value: "mediterranean", label: "Mediterranean" },
 ];
 
+const STRESS_SLEEP_OPTIONS: { value: StressSleep; label: string }[] = [
+  { value: "low_good", label: "Low Stress / Good Sleep" },
+  { value: "moderate_ok", label: "Moderate Stress / OK Sleep" },
+  { value: "high_enough", label: "High Stress / Enough Sleep" },
+  { value: "low_poor", label: "Low Stress / Poor Sleep" },
+  { value: "high_poor", label: "High Stress / Poor Sleep" },
+];
+
+const MEAL_TIMING_OPTIONS: { value: MealTiming; label: string }[] = [
+  { value: "traditional_meals", label: "Traditional 3 Meals" },
+  { value: "small_frequent", label: "Small Frequent Meals" },
+  { value: "intermittent_16_8", label: "Intermittent Fasting 16:8" },
+  { value: "intermittent_18_6", label: "Intermittent Fasting 18:6" },
+  { value: "omad", label: "One Meal a Day" },
+  { value: "flexible_pattern", label: "Flexible Eating Pattern" },
+];
+
+const EXERCISE_ROUTINE_OPTIONS: { value: ExerciseRoutine; label: string }[] = [
+  { value: "strength", label: "Strength Training" },
+  { value: "cardio", label: "Cardio Focused" },
+  { value: "mix_exercise", label: "Mixed Exercise" },
+  { value: "yoga", label: "Yoga & Flexibility" },
+  { value: "sport", label: "Sports Based" },
+  { value: "minimal_ex", label: "Minimal Exercise" },
+];
+
+const BODY_TYPE_OPTIONS: { value: BodyType; label: string }[] = [
+  { value: "ectomorph", label: "Ectomorph (Naturally Thin)" },
+  { value: "mesomorph", label: "Mesomorph (Athletic Build)" },
+  { value: "endomorph", label: "Endomorph (Naturally Heavier)" },
+  { value: "combination", label: "Combination" },
+  { value: "not_sure", label: "Not Sure" },
+];
+
+const WATER_INTAKE_OPTIONS: { value: WaterIntake; label: string }[] = [
+  { value: "water_lt1", label: "Less than 1 liter daily" },
+  { value: "water_1to2", label: "1-2 liters daily" },
+  { value: "water_2to3", label: "2-3 liters daily" },
+  { value: "water_gt3", label: "More than 3 liters daily" },
+  { value: "water_unknown", label: "Not tracking water intake" },
+];
+
+const WEIGHT_GOAL_OPTIONS: { value: WeightGoal; label: string }[] = [
+  { value: "rapid_loss", label: "Rapid Weight Loss" },
+  { value: "moderate_loss", label: "Moderate Weight Loss" },
+  { value: "slow_loss", label: "Slow Weight Loss" },
+  { value: "maintain", label: "Maintain Current Weight" },
+  { value: "slight_gain", label: "Slight Weight Gain" },
+  { value: "moderate_gain", label: "Moderate Weight Gain" },
+  { value: "significant_gain", label: "Significant Weight Gain" },
+];
+
 const HEALTH_CONDITIONS = [
   { value: "none", label: "None" },
   { value: "diabetes", label: "Diabetes" },
@@ -145,6 +203,15 @@ const MEAL_PREFERENCES = [
   { value: "small_frequent", label: "Small Frequent Meals" },
 ];
 
+const PLAN_TYPE_OPTIONS = [
+  { value: "weight_loss", label: "Weight Loss" },
+  { value: "muscle_gain", label: "Muscle Gain" },
+  { value: "general_health", label: "General Health" },
+  { value: "athletic_performance", label: "Athletic Performance" },
+  { value: "specialized", label: "Specialized Diet" },
+];
+
+// Updated schema to include all required fields
 const profileSchema = z.object({
   age: z
     .number()
@@ -163,6 +230,9 @@ const profileSchema = z.object({
     .number()
     .min(30, { message: "Weight must be at least 30 kg" })
     .max(300, { message: "Weight must be at most 300 kg" }),
+  country: z.string().min(1, { message: "Country is required" }),
+  state: z.string().min(1, { message: "State is required" }),
+  city: z.string().min(1, { message: "City is required" }),
   activity_level: z.enum([
     "sedentary",
     "lightly_active",
@@ -183,6 +253,53 @@ const profileSchema = z.object({
   allergies: z.array(z.string()),
   recovery_needs: z.array(z.string()),
   meal_preferences: z.array(z.string()),
+  stress_sleep: z.enum([
+    "low_good", 
+    "moderate_ok", 
+    "high_enough", 
+    "low_poor", 
+    "high_poor"
+  ] as const).optional(),
+  meal_timing: z.enum([
+    "traditional_meals", 
+    "small_frequent", 
+    "intermittent_16_8", 
+    "intermittent_18_6", 
+    "omad", 
+    "flexible_pattern"
+  ] as const).optional(),
+  exercise_routine: z.enum([
+    "strength", 
+    "cardio", 
+    "mix_exercise", 
+    "yoga", 
+    "sport", 
+    "minimal_ex"
+  ] as const).optional(),
+  body_type: z.enum([
+    "ectomorph", 
+    "mesomorph", 
+    "endomorph", 
+    "combination", 
+    "not_sure"
+  ] as const).optional(),
+  water_intake: z.enum([
+    "water_lt1", 
+    "water_1to2", 
+    "water_2to3", 
+    "water_gt3", 
+    "water_unknown"
+  ] as const).optional(),
+  weight_goal: z.enum([
+    "rapid_loss", 
+    "moderate_loss", 
+    "slow_loss", 
+    "maintain", 
+    "slight_gain", 
+    "moderate_gain", 
+    "significant_gain"
+  ] as const).optional(),
+  plan_type: z.string().min(1, { message: "Plan type is required" }),
 });
 
 type FormData = z.infer<typeof profileSchema>;
@@ -197,6 +314,8 @@ const ClientProfileForm = () => {
     dietary: true,
     health: true,
     goals: true,
+    location: true,
+    advanced: false,
   });
 
   const navigate = useNavigate();
@@ -206,7 +325,7 @@ const ClientProfileForm = () => {
   // Fetch user data to display name
   const { data: userData } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => userService.getUser(userId),
+    queryFn: () => getUserById(userId),
     enabled: !!userId,
   });
 
@@ -219,12 +338,16 @@ const ClientProfileForm = () => {
       height: 0,
       current_weight: 0,
       target_weight: 0,
+      country: "",
+      state: "",
+      city: "",
       activity_level: "moderately_active",
       diet_type: "standard",
-      health_conditions: [], // Initialize as empty array
-      allergies: [], // Initialize as empty array
-      recovery_needs: [], // Initialize as empty array
-      meal_preferences: [], // Initialize as empty array
+      health_conditions: [],
+      allergies: [],
+      recovery_needs: [],
+      meal_preferences: [],
+      plan_type: "weight_loss",
     },
     mode: "onChange",
   });
@@ -232,7 +355,7 @@ const ClientProfileForm = () => {
   // Fetch client profile data
   const { data: profileData, isLoading: isProfileLoading } = useQuery({
     queryKey: ["client-profile", userId],
-    queryFn: () => profileService.getClientProfile(userId),
+    queryFn: () => getClientProfile(userId),
     enabled: !!userId,
   });
 
@@ -247,6 +370,9 @@ const ClientProfileForm = () => {
           height: profileData.height,
           current_weight: profileData.current_weight,
           target_weight: profileData.target_weight,
+          country: profileData.country,
+          state: profileData.state,
+          city: profileData.city,
           activity_level: profileData.activity_level,
           diet_type: profileData.diet_type,
           health_conditions: Array.isArray(profileData.health_conditions)
@@ -261,6 +387,13 @@ const ClientProfileForm = () => {
           meal_preferences: Array.isArray(profileData.meal_preferences)
             ? profileData.meal_preferences
             : [],
+          stress_sleep: profileData.stress_sleep,
+          meal_timing: profileData.meal_timing,
+          exercise_routine: profileData.exercise_routine,
+          body_type: profileData.body_type,
+          water_intake: profileData.water_intake,
+          weight_goal: profileData.weight_goal,
+          plan_type: profileData.plan_type_display || "weight_loss",
         });
       } else {
         // Only for new profiles - initialize with reasonable defaults
@@ -270,12 +403,16 @@ const ClientProfileForm = () => {
           height: 170,
           current_weight: 70,
           target_weight: 70,
+          country: "",
+          state: "",
+          city: "",
           activity_level: "moderately_active",
           diet_type: "standard",
           health_conditions: ["none"],
           allergies: ["none"],
           recovery_needs: [],
           meal_preferences: [],
+          plan_type: "weight_loss",
         });
       }
       setFormInitialized(true);
@@ -285,7 +422,7 @@ const ClientProfileForm = () => {
   // Create or update profile mutation
   const createOrUpdateProfileMutation = useMutation({
     mutationFn: (data: CreateProfileData) =>
-      profileService.createOrUpdateClientProfile(userId, data),
+      createOrUpdateClientProfile(userId, data),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -307,7 +444,7 @@ const ClientProfileForm = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: UpdateProfileData) =>
-      profileService.updateClientProfile(userId, data),
+      updateClientProfile(userId, data),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -625,6 +762,113 @@ const ClientProfileForm = () => {
                           </FormItem>
                         )}
                       />
+                      
+                      <FormField
+                        control={form.control}
+                        name="weight_goal"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Weight Goal</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select weight goal" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {WEIGHT_GOAL_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible
+                  open={openSections.location}
+                  className="border rounded-lg overflow-hidden"
+                >
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSection("location")}
+                      className="flex w-full justify-between p-4 rounded-none border-b"
+                    >
+                      <span className="text-lg font-semibold">
+                        Location Information
+                      </span>
+                      {openSections.location ? <ChevronUp /> : <ChevronDown />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="p-4 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                className="bg-white/70"
+                                placeholder="Enter country"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State/Province</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                className="bg-white/70"
+                                placeholder="Enter state or province"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                className="bg-white/70"
+                                placeholder="Enter city"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
@@ -669,6 +913,38 @@ const ClientProfileForm = () => {
                                     value={diet.value}
                                   >
                                     {diet.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="meal_timing"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Meal Timing Preference</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select meal timing" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {MEAL_TIMING_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -814,6 +1090,37 @@ const ClientProfileForm = () => {
                           </FormItem>
                         )}
                       />
+                      
+                      <FormField
+                        control={form.control}
+                        name="stress_sleep"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Stress & Sleep Status</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select stress & sleep status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {STRESS_SLEEP_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
@@ -869,6 +1176,151 @@ const ClientProfileForm = () => {
                                 </FormItem>
                               ))}
                             </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="exercise_routine"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Exercise Routine</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select exercise routine" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {EXERCISE_ROUTINE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="plan_type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Plan Type</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select plan type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {PLAN_TYPE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible
+                  open={openSections.advanced}
+                  className="border rounded-lg overflow-hidden"
+                >
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleSection("advanced")}
+                      className="flex w-full justify-between p-4 rounded-none border-b"
+                    >
+                      <span className="text-lg font-semibold">
+                        Advanced Settings
+                      </span>
+                      {openSections.advanced ? <ChevronUp /> : <ChevronDown />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="p-4 pt-2">
+                    <div className="space-y-6 pt-4">
+                      <FormField
+                        control={form.control}
+                        name="body_type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Body Type</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select body type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {BODY_TYPE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="water_intake"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Water Intake</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="bg-white/70">
+                                  <SelectValue placeholder="Select water intake" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {WATER_INTAKE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
