@@ -84,4 +84,9 @@ const userService = {
   }
 };
 
+// For backward compatibility with named imports
+export const { getUsers, getUser, createUser, updateUser, deleteUser, getRoles } = userService;
+// Alias for any renamed functions
+export const getUserById = userService.getUser;
+
 export default userService;

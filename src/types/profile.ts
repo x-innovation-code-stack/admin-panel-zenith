@@ -51,6 +51,9 @@ export interface ClientProfile {
   primary_goal_display?: string;
   plan_type_display?: string;
   weight_goal?: WeightGoal;
+  body_type?: BodyType;
+  water_intake?: WaterIntake;
+  plan_type?: string;
   created_at: string;
   updated_at: string;
 }
@@ -76,7 +79,7 @@ export interface CreateProfileData {
   body_type?: BodyType;
   water_intake?: WaterIntake;
   weight_goal?: WeightGoal;
-  plan_type: string;
+  plan_type?: string;  // Made optional to match with the form data
 }
 
 export interface UpdateProfileData {

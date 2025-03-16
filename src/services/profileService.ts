@@ -37,20 +37,43 @@ const profileService = {
     return response.data;
   },
 
-  getClientProfile: async (userId: number): Promise<ClientProfile> => {
-    const response = await axios.get<ClientProfile>(`/users/${userId}/client-profile`);
-    return response.data;
+  getClientProfile: async (userId: number): Promise<ClientProfile | null> => {
+    try {
+      const response = await axios.get(`/users/${userId}/profile`);
+      return response.data.data;
+    } catch (error: any) {
+      // If profile not found (404), return null instead of throwing
+      if (error.response && error.response.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
-  createOrUpdateClientProfile: async (userId: number, data: CreateProfileData): Promise<ClientProfile> => {
-    const response = await axios.post<ClientProfile>(`/users/${userId}/client-profile`, data);
-    return response.data;
+  createOrUpdateClientProfile: async (
+    userId: number,
+    data: CreateProfileData
+  ): Promise<ClientProfile> => {
+    const response = await axios.post(`/users/${userId}/profile`, data);
+    return response.data.data;
   },
 
-  updateClientProfile: async (userId: number, data: UpdateProfileData): Promise<ClientProfile> => {
-    const response = await axios.put<ClientProfile>(`/users/${userId}/client-profile`, data);
-    return response.data;
+  updateClientProfile: async (
+    userId: number,
+    data: UpdateProfileData
+  ): Promise<ClientProfile> => {
+    const response = await axios.put(`/users/${userId}/profile`, data);
+    return response.data.data;
   }
 };
+
+// For backward compatibility with named imports
+export const { 
+  getUserProfile, 
+  updateUserProfile, 
+  getClientProfile, 
+  createOrUpdateClientProfile, 
+  updateClientProfile 
+} = profileService;
 
 export default profileService;

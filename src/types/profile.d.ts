@@ -79,7 +79,7 @@ export interface CreateProfileData {
   body_type?: BodyType;
   water_intake?: WaterIntake;
   weight_goal?: WeightGoal;
-  plan_type?: string;  // Made optional to match with the ClientProfileForm
+  plan_type?: string;  // Made optional to match with the form data
 }
 
 export interface UpdateProfileData {

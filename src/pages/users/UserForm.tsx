@@ -1,10 +1,9 @@
-
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createUser, getUserById, updateUser } from '@/services/userService';
-import { User, UserFormData } from '@/types/user';
+import userService from '@/services/userService';
+import { User } from '@/types/auth';
 import { toast } from 'sonner';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,6 +22,9 @@ const userFormSchema = z.object({
   whatsapp_phone: z.string().optional(),
   status: z.enum(['active', 'inactive']),
 });
+
+// Define type for form data
+type UserFormData = z.infer<typeof userFormSchema>;
 
 export default function UserForm() {
   const { id } = useParams();
@@ -47,8 +49,8 @@ export default function UserForm() {
   const mutation = useMutation({
     mutationFn: (data: UserFormData) => {
       return isEditMode
-        ? updateUser(Number(id), data)
-        : createUser(data);
+        ? userService.updateUser(Number(id), data)
+        : userService.createUser(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -63,7 +65,7 @@ export default function UserForm() {
   // Fetch user data when in edit mode
   const { data: user, isLoading } = useQuery({
     queryKey: ['user', id],
-    queryFn: () => getUserById(Number(id)),
+    queryFn: () => userService.getUser(Number(id)),
     enabled: isEditMode,
     refetchOnWindowFocus: false,
   });
