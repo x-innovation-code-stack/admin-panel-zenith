@@ -1,28 +1,9 @@
 
 import axios from '../lib/axios';
+import { User, UserFormData, UserFilters } from '../types/user';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  whatsapp_phone?: string;
-  status: 'active' | 'inactive';
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface UserFormData {
-  name: string;
-  email: string;
-  password?: string;
-  phone?: string;
-  whatsapp_phone?: string;
-  status: 'active' | 'inactive';
-}
-
-export const getUsers = async () => {
-  const response = await axios.get<User[]>('/users');
+export const getUsers = async (filters: UserFilters = {}) => {
+  const response = await axios.get<User[]>('/users', { params: filters });
   return response.data;
 };
 

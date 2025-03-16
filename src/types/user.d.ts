@@ -18,3 +18,8 @@ export interface UserFormData {
   whatsapp_phone?: string;
   status: 'active' | 'inactive';
 }
+
+export interface UserFilters {
+  search?: string;
+  status?: 'active' | 'inactive' | '';
+}
